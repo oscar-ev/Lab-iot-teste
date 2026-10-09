@@ -734,7 +734,7 @@ Sensores publicados: {'temperatura': 24.0, 'umidade': 40.0, 'solo': 50}</pre></d
   <div class="hv" aria-hidden="true">
   <div class="hv-top">HIVEMQ <span>Websockets Client Showcase</span></div>
   <div class="hv-box hv-conn"><span class="badge">A</span><b>Connection</b> <i class="hv-dot"></i>
-    <div class="hv-row"><span class="hv-f" style="flex:3">Host<em>broker.hivemq.com</em></span><span class="hv-f">Port<em>8000</em></span><span class="hv-f" style="flex:2">ClientID<em>clientId-…</em></span><span class="hv-btn">Connect</span></div>
+    <div class="hv-row"><span class="hv-f" style="flex:3">Host<em>broker.hivemq.com</em></span><span class="hv-f">Port<em>8884</em></span><span class="hv-f" style="flex:0 0 50px">SSL<em>☑</em></span><span class="hv-f" style="flex:2">ClientID<em>clientId-…</em></span><span class="hv-btn">Connect</span></div>
   </div>
   <div class="hv-grid">
     <div>
@@ -771,8 +771,8 @@ Sensores publicados: {'temperatura': 24.0, 'umidade': 40.0, 'solo': 50}</pre></d
       <p>O campo <b>Host</b> já vem preenchido com outro endereço (como <code>mqtt-dashboard.com</code>). Apague e escreva:</p>
       <div class="ps"><div class="bar">Host<button class="copy" data-copy="broker.hivemq.com">Copiar</button></div>
 <pre>broker.hivemq.com</pre></div>
-      <p>Deixe a <b>Port</b> em <code>8000</code> e não mexa nos outros campos.</p>
-      <div class="note tip"><p>Por que 8000 e não 1883 como no ESP32? O navegador não fala MQTT “puro”: ele usa uma porta especial (WebSocket). O broker é o mesmo, só a porta de entrada muda.</p></div>
+      <p>Na <b>Port</b>, apague o <code>8000</code> e escreva <b><code>8884</code></b>. Deixe a caixinha <b>SSL</b> <b>marcada</b>. Não mexa nos outros campos.</p>
+      <div class="note tip"><p>Por que 8884 e não 1883 como no ESP32? O navegador não fala MQTT “puro”: ele usa WebSocket, e como a página da HiveMQ é segura (https), a conexão também precisa ser segura (SSL). A porta 8884 é a entrada segura por WebSocket. O broker é o mesmo, só a porta de entrada muda. Com a porta 8000, o navegador bloqueia e aparece o erro <i>Connect timed out</i>.</p></div>
     </li>
     <li>
       <h4>Clique em Connect</h4>
@@ -804,7 +804,7 @@ Sensores publicados: {'temperatura': 24.0, 'umidade': 40.0, 'solo': 50}</pre></d
 
   <h3>Não funcionou?</h3>
   <details class="fix"><summary>A bolinha não fica verde</summary>
-    <p>Confira se o Host está exatamente <code>broker.hivemq.com</code> e a Port <code>8000</code>. Algumas redes de escola bloqueiam essa porta: tente pelo celular, roteando a internet, ou faça o teste em casa.</p></details>
+    <p>Se aparecer <i>Connect failed … Connect timed out</i>: confira se o Host está exatamente <code>broker.hivemq.com</code>, a Port <code>8884</code> e a caixinha <b>SSL</b> marcada. No navegador <b>Brave</b>, clique no leão 🦁 da barra de endereço e desligue os <i>Shields</i> para esse site. Se nada disso resolver, a rede está bloqueando a porta: teste roteando a internet do celular ou em casa. O Wokwi continua funcionando mesmo assim.</p></details>
   <details class="fix"><summary>Conectou, mas não chega nada em Messages</summary>
     <p>O tópico assinado não bate com o do código. Compare letra por letra com a linha <i>MQTT conectado! Ouvindo: …</i> que aparece no começo do monitor serial do Wokwi, e com o <code>GRUPO = "…"</code> do <code>main.py</code>. Confira também se a área Messages está aberta (setinha ▾).</p></details>
   <details class="fix"><summary>Publiquei ON e o LED não acendeu</summary>
