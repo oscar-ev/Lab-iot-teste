@@ -845,13 +845,119 @@ Sensores publicados: {'temperatura': 24.0, 'umidade': 40.0, 'solo': 50}</pre></d
   <p class="nr-cap">Bloco 6 (opcional): o painel mostra o estado real dos atuadores.</p>
 </div>
 
-  <h3>Antes de começar</h3>
+  <h3>Opção 1 (recomendada): abrindo o Node-RED no FlowFuse</h3>
+  <p>O <b>FlowFuse</b> é um serviço que roda o Node-RED na nuvem: ninguém instala nada, funciona em qualquer rede (inclusive a da faculdade) e o painel ganha um link para entregar. Basta <b>uma conta por grupo</b>; os colegas podem ser convidados depois.</p>
+  <div class="note warn"><b class="k">Leia antes de criar a conta</b><p>O cadastro dá um <b>teste grátis de 30 dias</b> com um Node-RED na nuvem. Depois desse prazo, se ninguém cadastrar uma forma de pagamento, a instância é <b>suspensa</b> (para de rodar). Criem a conta só quando forem começar a Etapa 4, para os 30 dias cobrirem o trabalho e a correção. Os nomes dos botões podem mudar um pouco, porque o site do FlowFuse é atualizado com frequência.</p></div>
   <ol class="steps">
     <li>
-      <h4>Abra o editor do Node-RED</h4>
-      <p><b>FlowFuse (recomendado):</b> crie a instância pelo tutorial do professor e clique em <b>Open Editor</b>. Ele roda na nuvem, funciona em qualquer rede e gera o link do painel para entregar.</p>
-      <p><b>Node-RED local:</b> só se o Dashboard instalar no seu computador. Nesse caso, a entrega é o arquivo <code>flows.json</code> exportado.</p>
+      <h4>Abra a página de cadastro</h4>
+      <p>Acesse o endereço abaixo (é o mesmo do botão <b>Free Trial</b> do site do FlowFuse):</p>
+      <div class="ps"><div class="bar">Endereço do navegador<button class="copy" data-copy="https://app.flowfuse.com/account/create">Copiar</button></div>
+<pre>https://app.flowfuse.com/account/create</pre></div>
     </li>
+    <li>
+      <h4>Crie a conta</h4>
+      <p>Preencha nome, e-mail e senha (ou entre com a conta Google, se aparecer a opção), aceite os termos e clique para criar a conta. Usem o e-mail de um integrante que todos consigam acessar, ou o institucional.</p>
+    </li>
+    <li>
+      <h4>Confirme o e-mail</h4>
+      <p>Abra a caixa de entrada (olhe também o <b>spam</b>), abra o e-mail do FlowFuse e clique no link de confirmação. Volte para o site e faça login.</p>
+    </li>
+    <li>
+      <h4>Crie o time (Team)</h4>
+      <p>No primeiro acesso, o FlowFuse pede para criar um <b>time</b>, que é o “espaço” do grupo. Dê um nome, por exemplo <code>Estufa Grupo 3</code>, e escolha a opção de <b>teste grátis</b> (Trial), se ele perguntar o tipo.</p>
+    </li>
+    <li>
+      <h4>Encontre ou crie a instância do Node-RED</h4>
+      <p>Uma <b>instância</b> é um Node-RED rodando na nuvem. Na maioria das vezes o FlowFuse já cria a primeira sozinho depois do primeiro login: ela aparece na página inicial (<b>Home</b>) ou em <b>Applications</b>.</p>
+      <p>Se não aparecer nenhuma, crie: clique em <b>Add Instance</b> → dê um nome (letras minúsculas e hífen, por exemplo <code>estufa-grupo-3</code>) → escolha a aplicação → o tipo e a versão do Node-RED (deixe o que vier sugerido) → <b>Next</b> → no modelo (<i>blueprint</i>), escolha o em branco ou um com <b>Dashboard</b>, se houver → <b>Create Instance</b>.</p>
+    </li>
+    <li>
+      <h4>Espere ficar “Running”</h4>
+      <p>A instância leva de 1 a 3 minutos para ligar. Espere o status mudar para <b>Running</b> (rodando), com uma bolinha verde. Se ficar parado em <i>Starting</i>, atualize a página (<kbd>F5</kbd>).</p>
+    </li>
+    <li>
+      <h4>Clique em Open Editor</h4>
+      <p>Clique na instância e depois no botão <b>Open Editor</b>, no canto superior direito. O editor do Node-RED abre numa aba nova, igual ao que vocês usaram nas aulas, com a faixa vermelha no alto. O endereço é algo como <code>https://estufa-grupo-3.flowfuse.cloud</code>.</p>
+      <div class='note ok'><b class='k'>Confira</b><p>Vocês estão no editor do Node-RED: paleta de nós à esquerda, área quadriculada no meio e o botão <b>Implementar</b> (Deploy) no canto superior direito.</p></div>
+    </li>
+    <li>
+      <h4>Convide os colegas (opcional)</h4>
+      <p>Na página do time, procure <b>Members</b> (membros) e convide os e-mails dos outros integrantes. Assim todos conseguem abrir o editor com a própria conta.</p>
+    </li>
+  </ol>
+  <h3>Opção 2: abrindo o Node-RED no próprio computador (sem Docker)</h3>
+  <p>Use esta opção só se não for usar o FlowFuse. O Node-RED é instalado direto no Windows, sem Docker e sem precisar de administrador. Duas limitações: o painel <b>não tem link público</b> (a entrega passa a ser o arquivo <code>flows.json</code> + o vídeo) e a rede da faculdade costuma <b>bloquear os downloads do npm</b>, então em geral só funciona em casa ou roteando a internet do celular.</p>
+  <ol class="steps">
+    <li>
+      <h4>Abra o PowerShell</h4>
+      <p>Aperte <kbd>⊞ Windows</kbd>, digite <b>PowerShell</b> e abra o <b>Windows PowerShell</b>.</p>
+    </li>
+    <li>
+      <h4>Veja se o Node.js já existe</h4>
+      <div class="ps"><div class="bar">PowerShell<button class="copy" data-copy="node --version">Copiar</button></div>
+<pre><span class="prompt">PS C:\Users\aluno&gt; </span>node --version</pre></div>
+      <p>Apareceu um número como <code>v22.x.x</code>? <b>Pule para o passo 4.</b> Apareceu erro em vermelho? Siga para o passo 3.</p>
+    </li>
+    <li>
+      <h4>Instale o Node.js (sem administrador)</h4>
+      <p>Copie o bloco inteiro, cole no PowerShell e aperte <kbd>Enter</kbd> (se ficar mostrando <code>&gt;&gt;</code>, aperte <kbd>Enter</kbd> mais uma vez):</p>
+      <div class="ps"><div class="bar">PowerShell (cole tudo de uma vez)<button class="copy" data-copy="&amp; {&#10;  $ErrorActionPreference = &#x27;Stop&#x27;&#10;  [Net.ServicePointManager]::SecurityProtocol = &#x27;Tls12&#x27;&#10;  $ProgressPreference = &#x27;SilentlyContinue&#x27;&#10;  $lista = Invoke-RestMethod https://nodejs.org/dist/index.json&#10;  $v = ($lista | Where-Object { $_.lts } | Select-Object -First 1).version&#10;  Write-Host &quot;Baixando Node.js $v ...&quot;&#10;  Invoke-WebRequest &quot;https://nodejs.org/dist/$v/node-$v-win-x64.zip&quot; -OutFile &quot;$env:TEMP\node.zip&quot;&#10;  Remove-Item &quot;$env:LOCALAPPDATA\nodejs&quot; -Recurse -Force -ErrorAction SilentlyContinue&#10;  Expand-Archive &quot;$env:TEMP\node.zip&quot; -DestinationPath $env:LOCALAPPDATA -Force&#10;  Rename-Item &quot;$env:LOCALAPPDATA\node-$v-win-x64&quot; &quot;nodejs&quot;&#10;  $novo = &quot;$env:LOCALAPPDATA\nodejs;$env:APPDATA\npm&quot;&#10;  $userPath = [Environment]::GetEnvironmentVariable(&#x27;Path&#x27;,&#x27;User&#x27;)&#10;  if ($userPath -notlike &quot;*$env:LOCALAPPDATA\nodejs*&quot;) {&#10;    [Environment]::SetEnvironmentVariable(&#x27;Path&#x27;, &quot;$novo;$userPath&quot;, &#x27;User&#x27;)&#10;  }&#10;  $env:Path = &quot;$novo;$env:Path&quot;&#10;  Write-Host &quot;Pronto! Node.js $v instalado.&quot; -ForegroundColor Green&#10;}">Copiar</button></div>
+<pre><span class="prompt">PS C:\Users\aluno&gt; </span>&amp; {
+  $ErrorActionPreference = 'Stop'
+  [Net.ServicePointManager]::SecurityProtocol = 'Tls12'
+  $ProgressPreference = 'SilentlyContinue'
+  $lista = Invoke-RestMethod https://nodejs.org/dist/index.json
+  $v = ($lista | Where-Object { $_.lts } | Select-Object -First 1).version
+  Write-Host "Baixando Node.js $v ..."
+  Invoke-WebRequest "https://nodejs.org/dist/$v/node-$v-win-x64.zip" -OutFile "$env:TEMP\node.zip"
+  Remove-Item "$env:LOCALAPPDATA\nodejs" -Recurse -Force -ErrorAction SilentlyContinue
+  Expand-Archive "$env:TEMP\node.zip" -DestinationPath $env:LOCALAPPDATA -Force
+  Rename-Item "$env:LOCALAPPDATA\node-$v-win-x64" "nodejs"
+  $novo = "$env:LOCALAPPDATA\nodejs;$env:APPDATA\npm"
+  $userPath = [Environment]::GetEnvironmentVariable('Path','User')
+  if ($userPath -notlike "*$env:LOCALAPPDATA\nodejs*") {
+    [Environment]::SetEnvironmentVariable('Path', "$novo;$userPath", 'User')
+  }
+  $env:Path = "$novo;$env:Path"
+  Write-Host "Pronto! Node.js $v instalado." -ForegroundColor Green
+}</pre></div>
+      <p>Espere a mensagem verde <b>Pronto! Node.js … instalado.</b> Ele fica na pasta do seu usuário, por isso não pede senha de administrador.</p>
+      <p>Tem administrador no computador? Também pode instalar pelo site <a href="https://nodejs.org/pt" target="_blank" rel="noopener">nodejs.org</a>: baixe a versão <b>LTS</b>, abra o arquivo e clique em <b>Next</b> até o fim. Depois feche e abra o PowerShell.</p>
+    </li>
+    <li>
+      <h4>Instale o Node-RED</h4>
+      <div class="ps"><div class="bar">PowerShell<button class="copy" data-copy="npm.cmd install -g node-red">Copiar</button></div>
+<pre><span class="prompt">PS C:\Users\aluno&gt; </span>npm.cmd install -g node-red</pre></div>
+      <p>Leva de 1 a 5 minutos. Linhas amarelas <code>npm warn</code> são só avisos. Terminou quando aparecer <code>added … packages</code>. Se aparecer <code>ECONNRESET</code>, a rede está bloqueando o npm: troque de rede ou use o FlowFuse.</p>
+      <p>O <code>.cmd</code> no fim evita o bloqueio de scripts que o Windows costuma ter.</p>
+    </li>
+    <li>
+      <h4>Ligue o Node-RED</h4>
+      <div class="ps"><div class="bar">PowerShell<button class="copy" data-copy="node-red.cmd">Copiar</button></div>
+<pre><span class="prompt">PS C:\Users\aluno&gt; </span>node-red.cmd</pre></div>
+      <p>Espere a linha <code>Server now running at http://127.0.0.1:1880/</code>. Se o Firewall perguntar, clique em <b>Permitir acesso</b>. <b>Não feche esta janela</b>: fechou, o Node-RED desliga (pode minimizar).</p>
+    </li>
+    <li>
+      <h4>Abra o editor no navegador</h4>
+      <div class="ps"><div class="bar">Endereço do navegador<button class="copy" data-copy="http://127.0.0.1:1880">Copiar</button></div>
+<pre>http://127.0.0.1:1880</pre></div>
+      <p>Aparece o editor do Node-RED, com a faixa vermelha no alto.</p>
+    </li>
+    <li>
+      <h4>Instale o Dashboard</h4>
+      <p>Menu <b>☰</b> (canto superior direito) → <b>Gerenciar paleta</b> → aba <b>Instalar</b> → busque o pacote abaixo → <b>Instalar</b> → confirme.</p>
+      <div class="ps"><div class="bar">Nome do pacote<button class="copy" data-copy="@flowfuse/node-red-dashboard">Copiar</button></div>
+<pre>@flowfuse/node-red-dashboard</pre></div>
+    </li>
+    <li>
+      <h4>Desligar e ligar de novo</h4>
+      <p><b>Desligar:</b> clique na janela do PowerShell e aperte <kbd>Ctrl</kbd> + <kbd>C</kbd>. <b>Ligar outro dia:</b> abra o PowerShell, rode <code>node-red.cmd</code> e abra <code>http://127.0.0.1:1880</code>. Não precisa instalar de novo; os fluxos ficam salvos.</p>
+    </li>
+  </ol>
+
+  <h3>Antes de montar</h3>
+  <ol class="steps">
     <li>
       <h4>Confira se os nós de painel estão instalados</h4>
       <p>Na busca da paleta (à esquerda), digite <b>gauge</b>. Se aparecer um nó <b>azul</b> chamado gauge, na categoria <b>dashboard 2</b>, está tudo certo.</p>
@@ -952,7 +1058,7 @@ return [
       <p>Clique em <b>Implementar</b> e abra o painel:</p>
       <ul>
         <li><b>FlowFuse:</b> na página da instância, botão <b>Dashboard</b>.</li>
-        <li><b>Local:</b> acrescente <code>/dashboard</code> no fim do endereço do editor.</li>
+        <li><b>Local:</b> abra <code>http://127.0.0.1:1880/dashboard</code>.</li>
       </ul>
       <div class="note ok"><b class="k">Confira</b><p>Aparecem os 3 medidores e o gráfico. Mexa no DHT22 e no potenciômetro do Wokwi: em até 5 segundos o painel acompanha.</p></div>
     </li>
@@ -1094,7 +1200,7 @@ return [
     <li>O <b>nome do grupo / tópicos</b> usados no MQTT, para o professor conseguir testar.</li>
     <li>O <b>vídeo</b> de até 5 minutos, com a fala de todos.</li>
   </ul>
-  <div class="note warn"><b class="k">“Mantenham tudo online”</b><p>Não apaguem nem parem a instância do FlowFuse depois da entrega. Para ver o painel funcionando, o professor vai abrir o link do Wokwi e clicar em ▶: por isso o código salvo no Wokwi precisa ser a versão final, com o nome do grupo certo.</p></div>
+  <div class="note warn"><b class="k">“Mantenham tudo online”</b><p>Não apaguem nem parem a instância do FlowFuse depois da entrega. Lembrem que o teste grátis dura 30 dias: se a correção puder passar disso, <b>enviem também o <code>flows.json</code></b> (menu ☰ → Exportar → todos os fluxos → Baixar), para o professor conseguir importar o painel mesmo com a instância suspensa. Para ver o painel funcionando, o professor vai abrir o link do Wokwi e clicar em ▶: por isso o código salvo no Wokwi precisa ser a versão final, com o nome do grupo certo.</p></div>
   <label class="done"><input type="checkbox" data-step="entrega"> Entregamos a atividade</label>
 </section>
 
