@@ -213,6 +213,31 @@ table.tab th{background:#F3F5F7}
 .wrap{overflow-x:auto}
 .c-wokwi{background:#C8E6C9}.c-broker{background:#D8BFD8}.c-nr{background:#9DD5E8}
 .rubrica{display:inline-block;background:#2E7D32;color:#fff;font-size:13px;font-weight:700;border-radius:4px;padding:1px 8px;margin-left:6px;vertical-align:middle}
+
+/* --- layout mais largo, sem rolagem lateral --- */
+main{max-width:1120px}
+p,li{max-width:none}
+section.part{padding:36px clamp(16px,4vw,40px)}
+.wrap{overflow-x:visible}
+table.tab,table.regras{table-layout:auto;width:100%}
+table.tab td,table.tab th,table.regras td,table.regras th{word-break:normal;overflow-wrap:anywhere}
+table code,dl code,li code,p code{white-space:normal;overflow-wrap:anywhere}
+.ps pre,details.json pre{white-space:pre-wrap;overflow-wrap:anywhere;overflow-x:hidden}
+.flow{flex-wrap:wrap;row-gap:10px;overflow-x:visible}
+
+.hv{border:2px solid #7C8891;border-radius:6px;background:#f2f2f2;font-size:14px;margin:16px 0;padding:0 0 10px;font-family:Arial,sans-serif}
+.hv-top{background:#fff;border-bottom:2px solid #333;padding:8px 12px;font-weight:700;letter-spacing:.08em;display:flex;justify-content:space-between}
+.hv-top span{font-weight:400;letter-spacing:0;font-size:13px}
+.hv-box{background:#e4e4e4;margin:10px 10px 0;padding:10px;border-radius:3px;position:relative}
+.hv-box small{color:#666;font-size:12px}
+.hv-box .badge{position:absolute;top:8px;right:8px}
+.hv-dot{display:inline-block;width:11px;height:11px;border-radius:50%;background:#c62828;vertical-align:middle;margin-left:6px}
+.hv-row{display:flex;gap:8px;margin-top:8px;align-items:flex-end;flex-wrap:wrap}
+.hv-f{flex:1;min-width:90px;color:#555;font-size:12px}
+.hv-f em{display:block;font-style:normal;background:#fff;border:1px solid #bbb;padding:4px 6px;color:#222;font-size:13px;margin-top:2px}
+.hv-btn{background:#2a9fd6;color:#fff;padding:5px 10px;font-size:13px;border-radius:2px}
+.hv-grid{display:grid;grid-template-columns:1.6fr 1fr}
+@media (max-width:640px){.hv-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -701,31 +726,91 @@ Sensores publicados: {'temperatura': 24.0, 'umidade': 40.0, 'solo': 50}</pre></d
 <section class="part" id="hivemq">
   <div class="part-tag"><i style="background:#D8BFD8"></i>Etapa 3 <span class="rubrica">1º ponto</span></div>
   <h2>Testando o MQTT antes do painel</h2>
-  <p>Antes de montar o painel, confiram se o ESP32 está mesmo conversando com o broker. Para isso existe um cliente MQTT que roda no navegador, da própria HiveMQ. Se algo der errado mais tarde, é aqui que vocês descobrem se o problema está no ESP32 ou no Node-RED.</p>
+  <p>Antes de montar o painel, vamos conferir se o ESP32 está mesmo conversando com o broker. Para isso usamos uma página da própria HiveMQ que funciona como um “cliente MQTT” dentro do navegador: ela consegue <b>ver</b> o que o ESP32 manda e <b>mandar</b> comandos para ele.</p>
+  <p>Se algo der errado mais tarde, é este teste que mostra se o problema está no ESP32 ou no Node-RED.</p>
+
+  <h3>Conheça a tela</h3>
+  <p>A página tem quatro áreas. O desenho abaixo é uma versão simplificada:</p>
+  <div class="hv" aria-hidden="true">
+  <div class="hv-top">HIVEMQ <span>Websockets Client Showcase</span></div>
+  <div class="hv-box hv-conn"><span class="badge">A</span><b>Connection</b> <i class="hv-dot"></i>
+    <div class="hv-row"><span class="hv-f" style="flex:3">Host<em>broker.hivemq.com</em></span><span class="hv-f">Port<em>8000</em></span><span class="hv-f" style="flex:2">ClientID<em>clientId-…</em></span><span class="hv-btn">Connect</span></div>
+  </div>
+  <div class="hv-grid">
+    <div>
+      <div class="hv-box"><span class="badge">C</span><b>Publish</b> <small>▾ abre clicando na setinha</small>
+        <div class="hv-row"><span class="hv-f" style="flex:3">Topic</span><span class="hv-btn">Publish</span></div>
+        <div class="hv-row"><span class="hv-f">Message</span></div></div>
+      <div class="hv-box"><span class="badge">D</span><b>Messages</b> <small>▾ abre clicando na setinha</small></div>
+    </div>
+    <div class="hv-box"><span class="badge">B</span><b>Subscriptions</b><div class="hv-row"><span class="hv-btn">Add New Topic Subscription</span></div></div>
+  </div>
+</div>
+  <ul class="legend">
+    <li><span class="badge">A</span><div><b>Connection</b>: onde você conecta no broker. A bolinha ao lado do título fica <b style="color:#c62828">vermelha</b> (desconectado) ou <b style="color:#2e7d32">verde</b> (conectado).</div></li>
+    <li><span class="badge">B</span><div><b>Subscriptions</b> (assinaturas): onde você diz quais tópicos quer <b>ouvir</b>.</div></li>
+    <li><span class="badge">C</span><div><b>Publish</b> (publicar): onde você <b>manda</b> uma mensagem para um tópico.</div></li>
+    <li><span class="badge">D</span><div><b>Messages</b> (mensagens): onde aparece tudo o que chega dos tópicos assinados.</div></li>
+  </ul>
+  <div class="note warn"><b class="k">A ordem importa</b><p>Primeiro <b>conectar</b> (bolinha verde), depois <b>assinar</b>, depois <b>publicar</b>. Se tentar assinar com a bolinha vermelha, nada acontece.</p></div>
+
+  <h3>Passo a passo</h3>
   <ol class="steps">
     <li>
-      <h4>Abra o cliente web da HiveMQ</h4>
-      <p>Deixe o Wokwi rodando numa aba e abra outra aba com:</p>
+      <h4>Deixe o Wokwi rodando</h4>
+      <p>Na aba do Wokwi, a simulação precisa estar ligada (▶) e o monitor serial mostrando <i>Sensores publicados</i>. Não feche essa aba.</p>
+    </li>
+    <li>
+      <h4>Abra o cliente da HiveMQ em outra aba</h4>
+      <p>Abra uma <b>nova aba</b> do navegador (<kbd>Ctrl</kbd> + <kbd>T</kbd>) e acesse:</p>
       <div class="ps"><div class="bar">Endereço do navegador<button class="copy" data-copy="https://www.hivemq.com/demos/websocket-client/">Copiar</button></div>
 <pre>https://www.hivemq.com/demos/websocket-client/</pre></div>
-      <p>Confira os campos <b>Host</b> <code>broker.hivemq.com</code> e <b>Port</b> <code>8000</code> e clique em <b>Connect</b>. A porta aqui é 8000 (e não 1883) porque o navegador conversa com o broker por <i>WebSocket</i>; o broker é o mesmo.</p>
     </li>
     <li>
-      <h4>Assine os tópicos do grupo</h4>
-      <p>Em <b>Subscriptions</b>, clique em <b>Add New Topic Subscription</b>, coloque o tópico abaixo e clique em <b>Subscribe</b>:</p>
-      <div class="ps"><div class="bar">Tópico para assinar<button class="copy" data-copy="estufa-joao/GRUPO_AQUI/#">Copiar</button></div>
+      <h4>Arrume o Host (área A)</h4>
+      <p>O campo <b>Host</b> já vem preenchido com outro endereço (como <code>mqtt-dashboard.com</code>). Apague e escreva:</p>
+      <div class="ps"><div class="bar">Host<button class="copy" data-copy="broker.hivemq.com">Copiar</button></div>
+<pre>broker.hivemq.com</pre></div>
+      <p>Deixe a <b>Port</b> em <code>8000</code> e não mexa nos outros campos.</p>
+      <div class="note tip"><p>Por que 8000 e não 1883 como no ESP32? O navegador não fala MQTT “puro”: ele usa uma porta especial (WebSocket). O broker é o mesmo, só a porta de entrada muda.</p></div>
+    </li>
+    <li>
+      <h4>Clique em Connect</h4>
+      <p>Clique no botão azul <b>Connect</b> e espere a bolinha ao lado de <i>Connection</i> ficar <b>verde</b>. O botão muda para <b>Disconnect</b>. Pronto, você está conectado.</p>
+    </li>
+    <li>
+      <h4>Assine os tópicos do grupo (área B)</h4>
+      <p>Em <b>Subscriptions</b>, clique em <b>Add New Topic Subscription</b>. Abre uma janelinha. No campo <b>Topic</b>, apague o que tiver e cole:</p>
+      <div class="ps"><div class="bar">Topic<button class="copy" data-copy="estufa-joao/GRUPO_AQUI/#">Copiar</button></div>
 <pre>estufa-joao/GRUPO_AQUI/#</pre></div>
-      <p>Em <b>Messages</b> devem aparecer os sensores a cada 5 segundos. ✅ Isso prova o <code>publish()</code>.</p>
+      <p>Não precisa mexer em <i>Color</i> nem em <i>QoS</i>. Clique em <b>Subscribe</b>. O tópico aparece listado em Subscriptions.</p>
+      <p>O <code>#</code> no final quer dizer “tudo o que começa com <code>estufa-joao/<span class="g">GRUPO_AQUI</span>/</code>”: sensores, estado e comandos.</p>
     </li>
     <li>
-      <h4>Mande um comando para o ESP32</h4>
-      <p>Em <b>Publish</b>, preencha:</p>
+      <h4>Veja os dados chegando (área D)</h4>
+      <p>Clique na setinha ▾ ao lado de <b>Messages</b> para abrir a área. A cada 5 segundos aparece uma mensagem com o tópico <code>.../sensores</code> e os valores, por exemplo <code>{"temperatura": 24.0, "umidade": 40.0, "solo": 42}</code>.</p>
+      <p>Mexa no DHT22 ou no potenciômetro no Wokwi e veja os números mudarem aqui. ✅ <b>Isso prova que o <code>publish()</code> do ESP32 funciona.</b></p>
+    </li>
+    <li>
+      <h4>Mande um comando para o ESP32 (área C)</h4>
+      <p>Clique na setinha ▾ ao lado de <b>Publish</b> para abrir a área. No campo <b>Topic</b>, cole:</p>
       <div class="ps"><div class="bar">Topic<button class="copy" data-copy="estufa-joao/GRUPO_AQUI/comandos/lampada">Copiar</button></div>
 <pre>estufa-joao/GRUPO_AQUI/comandos/lampada</pre></div>
-      <p>No campo <b>Message</b> escreva <code>ON</code> e clique em <b>Publish</b>. No Wokwi, o <b>LED amarelo acende</b> e o monitor serial mostra <i>Comando recebido: lampada = ON</i>. ✅ Isso prova o <code>subscribe()</code>. Teste também <code>OFF</code> e os tópicos <code>.../comandos/ventilador</code> e <code>.../comandos/bomba</code>.</p>
+      <p>No campo grande <b>Message</b>, escreva <code>ON</code> e clique em <b>Publish</b>.</p>
+      <p>Volte para a aba do Wokwi: o <b>LED amarelo acendeu</b> e o monitor serial mostra <i>Comando recebido: lampada = ON</i>. ✅ <b>Isso prova que o <code>subscribe()</code> do ESP32 funciona.</b></p>
+      <p>Para apagar, publique <code>OFF</code> no mesmo tópico. Teste também trocando o final do tópico por <code>ventilador</code> (LED azul) e <code>bomba</code> (relé).</p>
     </li>
   </ol>
-  <div class="note tip"><b class="k">Dica para o vídeo</b><p>Este teste é ótimo para mostrar no vídeo: dá para ver a mensagem saindo de um lado e chegando do outro.</p></div>
+
+  <h3>Não funcionou?</h3>
+  <details class="fix"><summary>A bolinha não fica verde</summary>
+    <p>Confira se o Host está exatamente <code>broker.hivemq.com</code> e a Port <code>8000</code>. Algumas redes de escola bloqueiam essa porta: tente pelo celular, roteando a internet, ou faça o teste em casa.</p></details>
+  <details class="fix"><summary>Conectou, mas não chega nada em Messages</summary>
+    <p>O tópico assinado não bate com o do código. Compare letra por letra com a linha <i>MQTT conectado! Ouvindo: …</i> que aparece no começo do monitor serial do Wokwi, e com o <code>GRUPO = "…"</code> do <code>main.py</code>. Confira também se a área Messages está aberta (setinha ▾).</p></details>
+  <details class="fix"><summary>Publiquei ON e o LED não acendeu</summary>
+    <p>Confira o tópico (tem que terminar em <code>/comandos/lampada</code>) e se a mensagem é só <code>ON</code>, sem espaços. Veja no monitor serial se aparece <i>Comando recebido</i>: se aparece, o problema é a ligação do LED (perna A no resistor, C no GND).</p></details>
+
+  <div class="note tip"><b class="k">Dica para o vídeo</b><p>Este teste é ótimo para mostrar no vídeo: deixem a HiveMQ e o Wokwi lado a lado e mostrem a mensagem saindo de um lado e chegando do outro.</p></div>
   <label class="done"><input type="checkbox" data-step="hivemq"> Concluí esta etapa</label>
 </section>
 
