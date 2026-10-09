@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Passo 4 | ESP32, MQTT e Node-RED</title>
+<meta name="description" content="Passo a passo: ESP32 no Wokwi com Wi-Fi e MQTT (HiveMQ) e painel no Node-RED para a estufa do Sr. João.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌱</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#E9EDF0;
+  --paper:#FFFFFF;
+  --ink:#1E2B36;
+  --muted:#53616C;
+  --line:#C9D1D7;
+  --red:#A3171F;
+  --red-dark:#7D1017;
+  --ps:#012456;
+  --ps-text:#EEF2F7;
+  --inject:#A6BBCF;
+  --function:#FDD0A2;
+  --switch:#E2D96E;
+  --debug:#87A980;
+  --dash:#9DD5E8;
+  --ok:#3E8E41;
+  --sans:"Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  --mono:"IBM Plex Mono", Consolas, "Courier New", monospace;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{
+  margin:0;font-family:var(--sans);font-size:18px;line-height:1.6;color:var(--ink);
+  background-color:var(--canvas);
+  background-image:
+    linear-gradient(to right, rgba(30,43,54,.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(30,43,54,.06) 1px, transparent 1px);
+  background-size:20px 20px;
+}
+a{color:var(--red)}
+a:focus-visible,button:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid #1A73E8;outline-offset:2px}
+
+/* Barra superior */
+.topbar{
+  position:sticky;top:0;z-index:10;background:#8F0000;color:#fff;
+  display:flex;align-items:center;gap:16px;padding:10px 20px;
+}
+.topbar strong{font-size:17px}
+.progress{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:15px}
+.meter{width:120px;height:8px;background:rgba(255,255,255,.25);border-radius:4px;overflow:hidden}
+.meter span{display:block;height:100%;width:0;background:#fff;transition:width .3s}
+
+/* Abertura */
+header.hero{max-width:1100px;margin:0 auto;padding:56px 20px 24px}
+.hero h1{font-size:clamp(40px,7vw,72px);line-height:1.02;margin:0 0 12px;letter-spacing:-.02em}
+.hero p.lead{font-size:21px;max-width:44ch;margin:0 0 32px;color:var(--muted)}
+.flow-nav{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto}
+.flow-nav svg{display:block;min-width:880px;width:100%;height:auto}
+.flow-nav .hint{font-size:15px;color:var(--muted);margin:6px 4px 0}
+.fn-node{cursor:pointer}
+.fn-node rect.body{stroke:#999;stroke-width:1}
+.fn-node:hover rect.body,.fn-node:focus rect.body{stroke:var(--red);stroke-width:2}
+.fn-node text{font-family:var(--sans);font-size:14px;fill:#333}
+.fn-status{opacity:0;transition:opacity .3s}
+.fn-status.on{opacity:1}
+
+/* Conteúdo */
+main{max-width:820px;margin:0 auto;padding:0 20px 80px}
+section.part{
+  background:var(--paper);border:1px solid var(--line);border-radius:8px;
+  padding:36px clamp(20px,5vw,48px);margin-top:36px;
+}
+.part-tag{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:var(--muted);margin-bottom:6px}
+.part-tag i{width:14px;height:14px;border-radius:3px;border:1px solid #999;display:inline-block}
+h2{font-size:clamp(30px,4.5vw,40px);line-height:1.1;margin:0 0 16px;letter-spacing:-.01em}
+h3{font-size:24px;line-height:1.25;margin:36px 0 10px}
+p,li{max-width:68ch}
+code{font-family:var(--mono);font-size:.88em;background:#EEF1F3;border:1px solid #DCE2E6;border-radius:4px;padding:1px 5px}
+kbd{font-family:var(--sans);font-size:.85em;border:1px solid #B8C1C8;border-bottom-width:3px;border-radius:5px;padding:0 6px;background:#fff;white-space:nowrap}
+
+/* Glossário */
+dl.terms{display:grid;grid-template-columns:auto 1fr;gap:10px 18px;margin:20px 0}
+dl.terms dt{font-weight:700}
+dl.terms dd{margin:0}
+@media (max-width:560px){dl.terms{grid-template-columns:1fr}dl.terms dd{margin-bottom:8px}}
+
+/* Passos numerados */
+ol.steps{list-style:none;counter-reset:s;padding:0;margin:24px 0}
+ol.steps>li{counter-increment:s;position:relative;padding:0 0 28px 56px;border-left:2px solid var(--line);margin-left:18px}
+ol.steps>li:last-child{border-left-color:transparent;padding-bottom:0}
+ol.steps>li::before{
+  content:counter(s);position:absolute;left:-19px;top:-4px;width:36px;height:36px;border-radius:50%;
+  background:var(--red);color:#fff;font-weight:700;display:grid;place-items:center;font-size:17px;
+}
+ol.steps>li>h4{font-size:20px;margin:0 0 6px;line-height:1.3}
+ol.steps>li>h4+p{margin-top:0}
+
+/* Terminal PowerShell */
+.ps{background:var(--ps);color:var(--ps-text);border-radius:6px;margin:12px 0;position:relative;font-family:var(--mono);font-size:15px}
+.ps .bar{display:flex;align-items:center;justify-content:space-between;padding:6px 8px 6px 14px;border-bottom:1px solid rgba(255,255,255,.12);font-family:var(--sans);font-size:13px;color:#A9B8CC}
+.ps pre{margin:0;padding:14px 16px;overflow-x:auto;white-space:pre}
+.ps .prompt{color:#7FA6D6;user-select:none}
+.ps.output pre{color:#C9D6E6}
+.copy{
+  font-family:var(--sans);font-size:14px;font-weight:700;border:0;border-radius:4px;cursor:pointer;
+  background:#fff;color:var(--ps);padding:5px 12px;
+}
+.copy.done{background:#7CD992}
+
+/* Caixas de aviso */
+.note{border-left:5px solid;border-radius:0 6px 6px 0;padding:12px 16px;margin:16px 0;background:#F6F8F9}
+.note p{margin:4px 0}
+.note.tip{border-color:#2F7DBF;background:#EEF5FB}
+.note.warn{border-color:#C98A00;background:#FDF6E3}
+.note.ok{border-color:var(--ok);background:#EEF7EE}
+.note b.k{display:block}
+
+/* Mini-fluxos das atividades */
+.flow{display:flex;align-items:center;flex-wrap:nowrap;overflow-x:auto;padding:16px 4px;margin:8px 0 16px}
+.fnode{
+  flex:none;display:inline-flex;align-items:center;gap:8px;border:1px solid #999;border-radius:5px;
+  padding:7px 12px 7px 0;font-size:15px;white-space:nowrap;position:relative
+}
+.fnode::before{content:"";width:22px;align-self:stretch;margin:-7px 0;background:rgba(0,0,0,.07);border-right:1px solid rgba(0,0,0,.12);border-radius:5px 0 0 5px}
+.fnode.split{flex-direction:column;align-items:flex-start;gap:0}
+.wire{flex:none;width:34px;height:2px;background:#888}
+.branch{display:flex;flex-direction:column;gap:10px}
+.branch .row{display:flex;align-items:center}
+.c-inject{background:var(--inject)}.c-function{background:var(--function)}.c-switch{background:var(--switch)}
+.c-debug{background:var(--debug)}.c-dash{background:var(--dash)}
+
+/* Editor de exemplo */
+.editor-mock{border:2px solid #7C8891;border-radius:6px;overflow:hidden;font-size:14px;margin:20px 0;background:#fff}
+.em-top{background:#8F0000;color:#fff;display:flex;align-items:center;gap:10px;padding:8px 10px}
+.em-top .deploy{margin-left:auto;background:#AD1625;border:1px solid #fff;border-radius:3px;padding:2px 10px}
+.em-body{display:grid;grid-template-columns:1fr 2.4fr 1.3fr;min-height:200px}
+.em-body>div{padding:10px;position:relative}
+.em-pal{background:#F3F3F3;border-right:1px solid #ccc}
+.em-pal span{display:block;margin:6px 0;padding:3px 6px;border:1px solid #999;border-radius:4px;font-size:13px}
+.em-work{background-image:linear-gradient(to right,#eee 1px,transparent 1px),linear-gradient(#eee 1px,transparent 1px);background-size:16px 16px}
+.em-side{background:#F3F3F3;border-left:1px solid #ccc}
+.badge{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#1A73E8;color:#fff;font-weight:700;font-size:13px;flex:none}
+.em-body .badge{position:absolute;top:8px;right:8px}
+.legend{list-style:none;padding:0}
+.legend li{display:flex;gap:12px;align-items:flex-start;margin:10px 0}
+
+/* Código de fluxo para importar */
+details.json{margin:12px 0;border:1px solid var(--line);border-radius:6px;background:#F8FAFB}
+details.json summary{cursor:pointer;padding:10px 14px;font-weight:700}
+details.json pre{margin:0;padding:14px;max-height:280px;overflow:auto;font-family:var(--mono);font-size:13px;white-space:pre-wrap;word-break:break-all;border-top:1px solid var(--line)}
+details.json .actions{padding:10px 14px;border-top:1px solid var(--line)}
+details.json .copy{background:var(--ps);color:#fff}
+
+/* Problemas */
+details.fix{border-bottom:1px solid var(--line);padding:12px 0}
+details.fix summary{cursor:pointer;font-weight:700}
+details.fix p{margin:8px 0 0}
+
+/* Concluí */
+label.done{
+  display:flex;align-items:center;gap:12px;margin-top:32px;padding:14px 16px;border:2px dashed var(--line);
+  border-radius:8px;cursor:pointer;font-weight:700
+}
+label.done input{width:22px;height:22px;accent-color:var(--ok)}
+label.done:has(input:checked){border-style:solid;border-color:var(--ok);background:#EEF7EE}
+
+.challenge{border:2px solid var(--ink);border-radius:8px;padding:16px 20px;margin-top:24px}
+.challenge h4{margin:0 0 6px;font-size:19px}
+
+ol.questions{padding-left:28px;margin:16px 0}
+ol.questions li{margin:0 0 14px;padding-left:6px}
+ol.questions li::marker{font-weight:700;color:var(--red)}
+.copy-dark{background:var(--ps);color:#fff;padding:8px 14px;font-size:15px}
+.muted{color:var(--muted);font-size:15px}
+ul.checklist{list-style:none;padding:0;margin:8px 0 0}
+ul.checklist li{padding-left:30px;position:relative;margin:6px 0}
+ul.checklist li::before{content:"";position:absolute;left:0;top:4px;width:18px;height:18px;border:2px solid var(--ink);border-radius:3px}
+
+footer{text-align:center;color:var(--muted);font-size:15px;padding:0 20px 40px}
+
+@media (max-width:640px){
+  body{font-size:17px}
+  .em-body{grid-template-columns:1fr}
+  .em-pal,.em-side{border:0;border-bottom:1px solid #ccc}
+  .meter{width:70px}
+  .topbar strong{font-size:15px}
+}
+@media print{
+  .topbar,.flow-nav,label.done,.copy{display:none}
+  body{background:#fff}
+  section.part{border:0;padding:0}
+}
+
+.pill{display:inline-block;font-size:14px;font-weight:700;border-radius:999px;padding:2px 12px;margin-left:8px;vertical-align:middle}
+.pill.pronto{background:#E3EEF7;color:#1F5C8F}
+.pill.voce{background:#FDEBD3;color:#8A4B00}
+table.regras{border-collapse:collapse;margin:12px 0;width:100%;max-width:560px}
+table.regras th,table.regras td{border:1px solid var(--line);padding:8px 12px;text-align:left}
+table.regras th{background:#F3F5F7}
+.c-mqtt{background:#D8BFD8}.c-http{background:#E7E7AE}
+
+.grupo-box{background:#1E2B36;color:#fff;border-radius:8px;padding:18px 20px;margin:20px 0}
+.grupo-box label{font-weight:700;display:block;margin-bottom:8px}
+.grupo-box input{font-family:var(--mono);font-size:18px;padding:8px 12px;border-radius:6px;border:2px solid #7FA6D6;width:100%;max-width:360px}
+.grupo-box small{display:block;margin-top:8px;color:#C9D6E6}
+.g{font-family:var(--mono);background:#FFF3C4;padding:0 4px;border-radius:3px}
+table.tab{border-collapse:collapse;margin:12px 0;width:100%;font-size:16px}
+table.tab th,table.tab td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top}
+table.tab th{background:#F3F5F7}
+.wrap{overflow-x:auto}
+.c-wokwi{background:#C8E6C9}.c-broker{background:#D8BFD8}.c-nr{background:#9DD5E8}
+.rubrica{display:inline-block;background:#2E7D32;color:#fff;font-size:13px;font-weight:700;border-radius:4px;padding:1px 8px;margin-left:6px;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="topbar" role="banner">
+  <strong>Passo 4: estufa conectada</strong>
+  <div class="progress" aria-live="polite">
+    <span id="progText">0 de 7 etapas</span>
+    <div class="meter" aria-hidden="true"><span id="progBar"></span></div>
+  </div>
+</div>
+
+<header class="hero">
+  <h1>Passo 4: a estufa conectada</h1>
+  <p class="lead">ESP32 no Wokwi, Wi-Fi, MQTT pela HiveMQ e um painel no Node-RED para o Sr. João acompanhar e controlar a estufa.</p>
+  <div class="flow-nav">
+    <svg id="flowSvg" viewBox="0 0 1220 190" role="navigation" aria-label="Etapas da atividade"></svg>
+    <p class="hint">Roteiro da atividade. Clique em um bloco para ir até a etapa. Quando o grupo concluir uma etapa, marque a caixinha no fim dela.</p>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ VISÃO GERAL ============ -->
+<section class="part" id="visao">
+  <div class="part-tag"><i style="background:var(--inject)"></i>Etapa 0</div>
+  <h2>Visão geral: o que o grupo vai construir</h2>
+  <p>Até aqui, a estufa do Sr. João existia só no papel ou dentro do Node-RED. Agora ela ganha um “cérebro” de verdade: um <b>ESP32</b> com sensores e atuadores, que conversa pela internet com um <b>painel</b>. Tudo simulado, sem precisar comprar nenhuma peça.</p>
+
+  <div class="flow" aria-label="Arquitetura">
+    <span class="fnode c-wokwi">ESP32 no Wokwi</span><span class="wire"></span>
+    <span class="fnode c-broker">Broker HiveMQ</span><span class="wire"></span>
+    <span class="fnode c-nr">Painel Node-RED</span>
+  </div>
+  <dl class="terms">
+    <dt>Wokwi</dt><dd>Simulador de eletrônica no navegador. Lá montamos o circuito e rodamos o código do ESP32.</dd>
+    <dt>ESP32</dt><dd>A placa (microcontrolador) com Wi-Fi. Ela lê os sensores e liga ou desliga os atuadores.</dd>
+    <dt>MicroPython</dt><dd>A linguagem que vamos usar no ESP32: é o Python, em versão para placas pequenas.</dd>
+    <dt>HiveMQ</dt><dd>O <b>broker</b> MQTT, o “carteiro” na internet: recebe as mensagens do ESP32 e entrega para o Node-RED, e vice-versa. Usaremos o broker público e gratuito <code>broker.hivemq.com</code>.</dd>
+    <dt>Node-RED</dt><dd>Onde fica o <b>painel</b> (dashboard) com medidores, gráfico e botões. Pode rodar no <b>FlowFuse</b> (na nuvem, recomendado) ou no computador.</dd>
+  </dl>
+
+  <h3>O que tem na estufa</h3>
+  <div class="wrap"><table class="tab">
+    <tr><th>Peça no Wokwi</th><th>Papel na estufa</th><th>Tipo</th><th>Pino do ESP32</th></tr>
+    <tr><td>DHT22</td><td>Temperatura e umidade do ar</td><td>Sensor</td><td>GPIO 15</td></tr>
+    <tr><td>Potenciômetro</td><td>Umidade do solo (girando simula solo seco ou molhado)</td><td>Sensor</td><td>GPIO 34</td></tr>
+    <tr><td>LED azul + resistor 220 Ω</td><td>Ventilador</td><td>Atuador</td><td>GPIO 26</td></tr>
+    <tr><td>Módulo relé</td><td>Bomba d’água da irrigação</td><td>Atuador</td><td>GPIO 27</td></tr>
+    <tr><td>LED amarelo + resistor 220 Ω</td><td>Lâmpada de cultivo</td><td>Atuador</td><td>GPIO 25</td></tr>
+  </table></div>
+  <p>O grupo pode trocar ou acrescentar peças (o enunciado permite “o que julgar necessário”), mas comece por esta montagem: ela já foi testada e cumpre todos os itens da avaliação.</p>
+
+  <h3>Primeiro passo de todos: o nome do grupo</h3>
+  <p>O broker <code>broker.hivemq.com</code> é <b>público</b>: o mundo inteiro usa o mesmo. Se dois grupos usarem o mesmo tópico, um vai ligar a lâmpada do outro! Por isso, cada grupo escolhe um nome único, que entra em todos os tópicos.</p>
+  <div class="grupo-box">
+    <label for="grupo">Nome único do seu grupo (letras minúsculas, números e hífen)</label>
+    <input id="grupo" type="text" placeholder="ex.: g3-ana-bia-caio" autocomplete="off" spellcheck="false">
+    <small id="grupoStatus"></small>
+    <small>Digite aqui e <b>todos os códigos desta página se ajustam sozinhos</b>. O nome fica salvo neste navegador; em outro computador, digite de novo, exatamente igual.</small>
+  </div>
+  <div class="note warn"><b class="k">Atenção</b><p>Como o broker é público, qualquer pessoa que souber o tópico consegue ler as mensagens. Nunca envie dados pessoais, senhas ou nomes completos pelo MQTT.</p></div>
+
+  <h3>Os tópicos MQTT do projeto</h3>
+  <div class="wrap"><table class="tab">
+    <tr><th>Tópico</th><th>Quem publica → quem assina</th><th>Exemplo de mensagem</th></tr>
+    <tr><td><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/sensores</code></td><td>ESP32 → Node-RED</td><td><code>{"temperatura": 26.5, "umidade": 55, "solo": 40}</code></td></tr>
+    <tr><td><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/comandos/ventilador</code><br><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/comandos/bomba</code><br><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/comandos/lampada</code></td><td>Node-RED → ESP32</td><td><code>ON</code> ou <code>OFF</code></td></tr>
+    <tr><td><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/estado</code></td><td>ESP32 → Node-RED</td><td><code>{"ventilador": "ON", "bomba": "OFF", "lampada": "OFF"}</code></td></tr>
+  </table></div>
+  <p>O tópico <b>estado</b> é a “confirmação”: depois de obedecer a um comando, o ESP32 avisa como os atuadores ficaram de verdade, e o painel atualiza os botões.</p>
+
+  <h3>Como a atividade é avaliada</h3>
+  <div class="wrap"><table class="tab">
+    <tr><th>Item</th><th>Onde está nesta página</th><th>Pontos</th></tr>
+    <tr><td>Conexões e broker MQTT: Wi-Fi com <code>network.WLAN</code>, <code>active()</code>, <code>connect()</code>; cliente <code>MQTTClient</code>, <code>connect()</code>; <code>publish()</code> e <code>subscribe()</code></td><td>Etapas 1, 2 e 3</td><td>1,0</td></tr>
+    <tr><td>Painel Node-RED: nós MQTT de entrada e saída, medidores, gráfico e botões que controlam atuadores</td><td>Etapa 4</td><td>1,0</td></tr>
+    <tr><td>Vídeo de até 5 minutos com a fala de todos + links</td><td>Etapa 6</td><td>parte da entrega</td></tr>
+  </table></div>
+
+  <h3>Divisão de tarefas sugerida</h3>
+  <p>Todos devem entender o projeto inteiro (todos falam no vídeo), mas dá para dividir a mão na massa: uma pessoa monta o circuito, outra cuida do código, outra do painel, outra organiza os testes, os links e o roteiro do vídeo. Revezem e expliquem uns aos outros.</p>
+
+  <label class="done"><input type="checkbox" data-step="visao"> Concluí esta etapa</label>
+</section>
+
+<!-- ============ CIRCUITO ============ -->
+<section class="part" id="circuito">
+  <div class="part-tag"><i style="background:#C8E6C9"></i>Etapa 1 <span class="rubrica">vale para o 1º ponto</span></div>
+  <h2>Montando o circuito no Wokwi</h2>
+  <ol class="steps">
+    <li>
+      <h4>Entre no Wokwi e faça login</h4>
+      <p>Acesse <a href="https://wokwi.com" target="_blank" rel="noopener">wokwi.com</a> e clique em <b>Sign in</b> (dá para entrar com a conta Google). Sem login o projeto não é salvo, e vocês precisam do link para entregar.</p>
+    </li>
+    <li>
+      <h4>Crie um projeto MicroPython para ESP32</h4>
+      <p>Abra este endereço, que já cria o projeto certo:</p>
+      <div class="ps"><div class="bar">Endereço do navegador<button class="copy" data-copy="https://wokwi.com/projects/new/micropython-esp32">Copiar</button></div>
+<pre>https://wokwi.com/projects/new/micropython-esp32</pre></div>
+      <p>Vai aparecer o código à esquerda (arquivo <b>main.py</b>) e o ESP32 à direita.</p>
+      <div class="note warn"><b class="k">Tem que ser MicroPython</b><p>Se criar um projeto “Arduino” por engano, o código em Python não vai funcionar (aparece erro de <code>import</code>). Na dúvida, use o link acima.</p></div>
+    </li>
+    <li>
+      <h4>Adicione as peças</h4>
+      <p>Clique no botão azul <b>+</b> em cima da área do circuito e procure cada peça pelo nome: <b>DHT22</b>, <b>Potentiometer</b>, <b>LED</b> (duas vezes), <b>Resistor</b> (duas vezes) e <b>Relay Module</b>.</p>
+      <p>Para trocar a cor do LED ou o valor do resistor, clique na peça: aparece um painel de propriedades. Deixe um LED <b>azul</b> (ventilador), um <b>amarelo</b> (lâmpada) e os dois resistores em <b>220 Ω</b>.</p>
+    </li>
+    <li>
+      <h4>Faça as ligações</h4>
+      <p>Para ligar um fio, clique na ponta de um pino e depois no pino de destino. Passe o mouse em cima dos pinos do ESP32 para ver o nome de cada um.</p>
+      <div class="wrap"><table class="tab">
+        <tr><th>Peça</th><th>Pino da peça</th><th>Liga em</th></tr>
+        <tr><td rowspan="3">DHT22</td><td>VCC</td><td>ESP32 <b>3V3</b></td></tr>
+        <tr><td>SDA (dados)</td><td>ESP32 <b>15</b></td></tr>
+        <tr><td>GND</td><td>ESP32 <b>GND</b></td></tr>
+        <tr><td rowspan="3">Potenciômetro</td><td>VCC</td><td>ESP32 <b>3V3</b></td></tr>
+        <tr><td>SIG (meio)</td><td>ESP32 <b>34</b></td></tr>
+        <tr><td>GND</td><td>ESP32 <b>GND</b></td></tr>
+        <tr><td rowspan="2">LED azul (ventilador)</td><td>A (perna dobrada, +)</td><td>Resistor 220 Ω → ESP32 <b>26</b></td></tr>
+        <tr><td>C (perna reta, −)</td><td>ESP32 <b>GND</b></td></tr>
+        <tr><td rowspan="3">Relé (bomba)</td><td>VCC</td><td>ESP32 <b>5V</b></td></tr>
+        <tr><td>GND</td><td>ESP32 <b>GND</b></td></tr>
+        <tr><td>IN</td><td>ESP32 <b>27</b></td></tr>
+        <tr><td rowspan="2">LED amarelo (lâmpada)</td><td>A (+)</td><td>Resistor 220 Ω → ESP32 <b>25</b></td></tr>
+        <tr><td>C (−)</td><td>ESP32 <b>GND</b></td></tr>
+      </table></div>
+      <div class="note tip"><b class="k">Por que o resistor?</b><p>Ele limita a corrente que passa pelo LED. Sem ele, um LED de verdade queimaria. Os pinos do ESP32 trabalham com 3,3 V, e o resistor de 220 Ω deixa passar só o suficiente para acender.</p></div>
+    </li>
+    <li>
+      <h4>Atalho: colar o circuito pronto (opcional)</h4>
+      <p>Em vez de montar à mão, dá para colar o circuito inteiro. Clique na aba <b>diagram.json</b> (ao lado de main.py), apague tudo e cole o conteúdo abaixo. Vale a pena entender a montagem mesmo assim: vocês vão explicá-la no vídeo.</p>
+      <details class="json">
+    <summary>Ver o diagram.json do circuito</summary>
+<pre id="diagram">{
+  "version": 1,
+  "author": "Estufa do Sr. João",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": {
+        "env": "micropython-20231005-v1.21.0"
+      }
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht1",
+      "top": -105,
+      "left": -140,
+      "attrs": {
+        "temperature": "26",
+        "humidity": "55"
+      }
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "pot1",
+      "top": 120,
+      "left": -190,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_vent",
+      "top": -30,
+      "left": 230,
+      "attrs": {
+        "color": "blue",
+        "label": "Ventilador"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": 40,
+      "left": 190,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    },
+    {
+      "type": "wokwi-relay-module",
+      "id": "relay1",
+      "top": 160,
+      "left": 220,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-led",
+      "id": "led_lamp",
+      "top": -30,
+      "left": 320,
+      "attrs": {
+        "color": "yellow",
+        "label": "Lâmpada"
+      }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r2",
+      "top": 40,
+      "left": 280,
+      "rotate": 90,
+      "attrs": {
+        "value": "220"
+      }
+    }
+  ],
+  "connections": [
+    [
+      "esp:TX",
+      "$serialMonitor:RX",
+      "",
+      []
+    ],
+    [
+      "esp:RX",
+      "$serialMonitor:TX",
+      "",
+      []
+    ],
+    [
+      "dht1:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "dht1:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "dht1:SDA",
+      "esp:15",
+      "green",
+      []
+    ],
+    [
+      "pot1:VCC",
+      "esp:3V3",
+      "red",
+      []
+    ],
+    [
+      "pot1:GND",
+      "esp:GND.1",
+      "black",
+      []
+    ],
+    [
+      "pot1:SIG",
+      "esp:34",
+      "orange",
+      []
+    ],
+    [
+      "esp:26",
+      "r1:1",
+      "blue",
+      []
+    ],
+    [
+      "r1:2",
+      "led_vent:A",
+      "blue",
+      []
+    ],
+    [
+      "led_vent:C",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "relay1:VCC",
+      "esp:5V",
+      "red",
+      []
+    ],
+    [
+      "relay1:GND",
+      "esp:GND.2",
+      "black",
+      []
+    ],
+    [
+      "relay1:IN",
+      "esp:27",
+      "purple",
+      []
+    ],
+    [
+      "esp:25",
+      "r2:1",
+      "gold",
+      []
+    ],
+    [
+      "r2:2",
+      "led_lamp:A",
+      "gold",
+      []
+    ],
+    [
+      "led_lamp:C",
+      "esp:GND.2",
+      "black",
+      []
+    ]
+  ],
+  "dependencies": {}
+}</pre>
+    <div class="actions"><button class="copy" data-copy-from="diagram">Copiar</button></div>
+  </details>
+      <p>Se as peças aparecerem amontoadas, arraste cada uma para um lugar livre: os fios acompanham.</p>
+    </li>
+    <li>
+      <h4>Salve o projeto</h4>
+      <p>Clique em <b>Save</b> (ou <kbd>Ctrl</kbd> + <kbd>S</kbd>) e dê um nome, por exemplo <code>Estufa Sr João - Grupo X</code>. O endereço na barra do navegador muda para algo como <code>wokwi.com/projects/123456…</code>: esse é o <b>link do Wokwi</b> que vocês vão entregar. Salvem sempre que mudarem algo.</p>
+    </li>
+  </ol>
+  <label class="done"><input type="checkbox" data-step="circuito"> Concluí esta etapa</label>
+</section>
+
+<!-- ============ CÓDIGO ============ -->
+<section class="part" id="codigo">
+  <div class="part-tag"><i style="background:var(--function)"></i>Etapa 2 <span class="rubrica">1º ponto</span></div>
+  <h2>Programando o ESP32: Wi-Fi e MQTT</h2>
+  <p>Confira se o nome do grupo foi digitado na <a href="#visao">Etapa 0</a>: a linha <code>GRUPO = "<span class="g">GRUPO_AQUI</span>"</code> do código abaixo tem que mostrar o nome de vocês, e não <code>GRUPO_AQUI</code>.</p>
+  <ol class="steps">
+    <li>
+      <h4>Cole o código no main.py</h4>
+      <p>No Wokwi, clique na aba <b>main.py</b>, apague tudo e cole:</p>
+      <div class="ps"><div class="bar">main.py (MicroPython)<button class="copy" data-copy="# =========================================================&#10;#  Estufa do Sr. João - ESP32 + Wi-Fi + MQTT (MicroPython)&#10;# =========================================================&#10;import network&#10;import time&#10;import ujson&#10;import dht&#10;from machine import Pin, ADC&#10;from umqtt.simple import MQTTClient&#10;&#10;# ---------- 1) CONFIGURAÇÕES ----------&#10;WIFI_SSID  = &quot;Wokwi-GUEST&quot;        # rede Wi-Fi do simulador&#10;WIFI_SENHA = &quot;&quot;                   # o Wokwi-GUEST não tem senha&#10;&#10;BROKER    = &quot;broker.hivemq.com&quot;   # broker MQTT público da HiveMQ&#10;PORTA     = 1883&#10;GRUPO     = &quot;GRUPO_AQUI&quot;          # nome único do seu grupo&#10;CLIENT_ID = &quot;esp32-&quot; + GRUPO&#10;&#10;BASE            = &quot;estufa-joao/&quot; + GRUPO&#10;TOPICO_SENSORES = BASE + &quot;/sensores&quot;     # ESP32 -&gt; Node-RED&#10;TOPICO_ESTADO   = BASE + &quot;/estado&quot;       # ESP32 -&gt; Node-RED&#10;TOPICO_COMANDOS = BASE + &quot;/comandos/#&quot;   # Node-RED -&gt; ESP32&#10;&#10;INTERVALO_MS = 5000               # envia os sensores a cada 5 segundos&#10;&#10;# ---------- 2) SENSORES E ATUADORES ----------&#10;sensor_ar = dht.DHT22(Pin(15))           # temperatura e umidade do ar&#10;sensor_solo = ADC(Pin(34))               # potenciômetro = umidade do solo&#10;sensor_solo.atten(ADC.ATTN_11DB)         # permite ler de 0 a 3,3 V&#10;&#10;atuadores = {&#10;    &quot;ventilador&quot;: Pin(26, Pin.OUT),      # LED azul&#10;    &quot;bomba&quot;:      Pin(27, Pin.OUT),      # relé da bomba d&#x27;água&#10;    &quot;lampada&quot;:    Pin(25, Pin.OUT),      # LED amarelo&#10;}&#10;&#10;# ---------- 3) WI-FI ----------&#10;def conectar_wifi():&#10;    print(&quot;Conectando ao Wi-Fi&quot;, end=&quot;&quot;)&#10;    wifi = network.WLAN(network.STA_IF)  # cria o objeto Wi-Fi&#10;    wifi.active(True)                    # liga o Wi-Fi&#10;    wifi.connect(WIFI_SSID, WIFI_SENHA)  # conecta na rede&#10;    while not wifi.isconnected():&#10;        print(&quot;.&quot;, end=&quot;&quot;)&#10;        time.sleep(0.3)&#10;    print(&quot; conectado! IP:&quot;, wifi.ifconfig()[0])&#10;&#10;# ---------- 4) MQTT ----------&#10;def publicar_estado():&#10;    estado = {}&#10;    for nome in atuadores:&#10;        estado[nome] = &quot;ON&quot; if atuadores[nome].value() == 1 else &quot;OFF&quot;&#10;    cliente.publish(TOPICO_ESTADO, ujson.dumps(estado))&#10;    print(&quot;Estado publicado:&quot;, estado)&#10;&#10;def ao_receber_comando(topico, mensagem):&#10;    topico = topico.decode()&#10;    comando = mensagem.decode().strip().upper()&#10;    nome = topico.split(&quot;/&quot;)[-1]         # &quot;.../comandos/bomba&quot; -&gt; &quot;bomba&quot;&#10;    print(&quot;Comando recebido:&quot;, nome, &quot;=&quot;, comando)&#10;    if nome in atuadores:&#10;        if comando == &quot;ON&quot;:&#10;            atuadores[nome].value(1)&#10;        elif comando == &quot;OFF&quot;:&#10;            atuadores[nome].value(0)&#10;        publicar_estado()&#10;&#10;def conectar_mqtt():&#10;    print(&quot;Conectando ao broker&quot;, BROKER, &quot;...&quot;)&#10;    c = MQTTClient(CLIENT_ID, BROKER, port=PORTA, keepalive=60)  # cria o cliente&#10;    c.set_callback(ao_receber_comando)   # função chamada quando chega comando&#10;    c.connect()                          # conecta no broker&#10;    c.subscribe(TOPICO_COMANDOS)         # assina os comandos dos atuadores&#10;    print(&quot;MQTT conectado! Ouvindo:&quot;, TOPICO_COMANDOS)&#10;    return c&#10;&#10;# ---------- 5) PROGRAMA PRINCIPAL ----------&#10;conectar_wifi()&#10;cliente = conectar_mqtt()&#10;publicar_estado()&#10;&#10;ultimo_envio = time.ticks_add(time.ticks_ms(), -INTERVALO_MS)  # já envia na 1ª volta&#10;while True:&#10;    try:&#10;        cliente.check_msg()              # chegou comando? (não trava o programa)&#10;&#10;        if time.ticks_diff(time.ticks_ms(), ultimo_envio) &gt;= INTERVALO_MS:&#10;            ultimo_envio = time.ticks_ms()&#10;            sensor_ar.measure()&#10;            dados = {&#10;                &quot;temperatura&quot;: sensor_ar.temperature(),&#10;                &quot;umidade&quot;: sensor_ar.humidity(),&#10;                &quot;solo&quot;: round(sensor_solo.read() * 100 / 4095),&#10;            }&#10;            cliente.publish(TOPICO_SENSORES, ujson.dumps(dados))&#10;            print(&quot;Sensores publicados:&quot;, dados)&#10;&#10;    except OSError as erro:&#10;        print(&quot;Conexão perdida:&quot;, erro, &quot;- reconectando...&quot;)&#10;        time.sleep(2)&#10;        cliente = conectar_mqtt()&#10;&#10;    time.sleep(0.1)&#10;">Copiar</button></div>
+<pre># =========================================================
+#  Estufa do Sr. João - ESP32 + Wi-Fi + MQTT (MicroPython)
+# =========================================================
+import network
+import time
+import ujson
+import dht
+from machine import Pin, ADC
+from umqtt.simple import MQTTClient
+
+# ---------- 1) CONFIGURAÇÕES ----------
+WIFI_SSID  = "Wokwi-GUEST"        # rede Wi-Fi do simulador
+WIFI_SENHA = ""                   # o Wokwi-GUEST não tem senha
+
+BROKER    = "broker.hivemq.com"   # broker MQTT público da HiveMQ
+PORTA     = 1883
+GRUPO     = "GRUPO_AQUI"          # nome único do seu grupo
+CLIENT_ID = "esp32-" + GRUPO
+
+BASE            = "estufa-joao/" + GRUPO
+TOPICO_SENSORES = BASE + "/sensores"     # ESP32 -&gt; Node-RED
+TOPICO_ESTADO   = BASE + "/estado"       # ESP32 -&gt; Node-RED
+TOPICO_COMANDOS = BASE + "/comandos/#"   # Node-RED -&gt; ESP32
+
+INTERVALO_MS = 5000               # envia os sensores a cada 5 segundos
+
+# ---------- 2) SENSORES E ATUADORES ----------
+sensor_ar = dht.DHT22(Pin(15))           # temperatura e umidade do ar
+sensor_solo = ADC(Pin(34))               # potenciômetro = umidade do solo
+sensor_solo.atten(ADC.ATTN_11DB)         # permite ler de 0 a 3,3 V
+
+atuadores = {
+    "ventilador": Pin(26, Pin.OUT),      # LED azul
+    "bomba":      Pin(27, Pin.OUT),      # relé da bomba d'água
+    "lampada":    Pin(25, Pin.OUT),      # LED amarelo
+}
+
+# ---------- 3) WI-FI ----------
+def conectar_wifi():
+    print("Conectando ao Wi-Fi", end="")
+    wifi = network.WLAN(network.STA_IF)  # cria o objeto Wi-Fi
+    wifi.active(True)                    # liga o Wi-Fi
+    wifi.connect(WIFI_SSID, WIFI_SENHA)  # conecta na rede
+    while not wifi.isconnected():
+        print(".", end="")
+        time.sleep(0.3)
+    print(" conectado! IP:", wifi.ifconfig()[0])
+
+# ---------- 4) MQTT ----------
+def publicar_estado():
+    estado = {}
+    for nome in atuadores:
+        estado[nome] = "ON" if atuadores[nome].value() == 1 else "OFF"
+    cliente.publish(TOPICO_ESTADO, ujson.dumps(estado))
+    print("Estado publicado:", estado)
+
+def ao_receber_comando(topico, mensagem):
+    topico = topico.decode()
+    comando = mensagem.decode().strip().upper()
+    nome = topico.split("/")[-1]         # ".../comandos/bomba" -&gt; "bomba"
+    print("Comando recebido:", nome, "=", comando)
+    if nome in atuadores:
+        if comando == "ON":
+            atuadores[nome].value(1)
+        elif comando == "OFF":
+            atuadores[nome].value(0)
+        publicar_estado()
+
+def conectar_mqtt():
+    print("Conectando ao broker", BROKER, "...")
+    c = MQTTClient(CLIENT_ID, BROKER, port=PORTA, keepalive=60)  # cria o cliente
+    c.set_callback(ao_receber_comando)   # função chamada quando chega comando
+    c.connect()                          # conecta no broker
+    c.subscribe(TOPICO_COMANDOS)         # assina os comandos dos atuadores
+    print("MQTT conectado! Ouvindo:", TOPICO_COMANDOS)
+    return c
+
+# ---------- 5) PROGRAMA PRINCIPAL ----------
+conectar_wifi()
+cliente = conectar_mqtt()
+publicar_estado()
+
+ultimo_envio = time.ticks_add(time.ticks_ms(), -INTERVALO_MS)  # já envia na 1ª volta
+while True:
+    try:
+        cliente.check_msg()              # chegou comando? (não trava o programa)
+
+        if time.ticks_diff(time.ticks_ms(), ultimo_envio) &gt;= INTERVALO_MS:
+            ultimo_envio = time.ticks_ms()
+            sensor_ar.measure()
+            dados = {
+                "temperatura": sensor_ar.temperature(),
+                "umidade": sensor_ar.humidity(),
+                "solo": round(sensor_solo.read() * 100 / 4095),
+            }
+            cliente.publish(TOPICO_SENSORES, ujson.dumps(dados))
+            print("Sensores publicados:", dados)
+
+    except OSError as erro:
+        print("Conexão perdida:", erro, "- reconectando...")
+        time.sleep(2)
+        cliente = conectar_mqtt()
+
+    time.sleep(0.1)
+</pre></div>
+    </li>
+    <li>
+      <h4>Entenda as partes que valem nota</h4>
+      <p>O professor vai procurar exatamente estes comandos. Saibam apontar cada um no vídeo:</p>
+      <div class="wrap"><table class="tab">
+        <tr><th>O enunciado pede</th><th>Linha no código</th><th>O que faz</th></tr>
+        <tr><td>Criar objeto Wi-Fi com <code>network.WLAN</code></td><td><code>wifi = network.WLAN(network.STA_IF)</code></td><td>Cria o Wi-Fi no modo “estação” (o ESP32 entra numa rede, como um celular).</td></tr>
+        <tr><td>Ativar com <code>active()</code></td><td><code>wifi.active(True)</code></td><td>Liga o rádio Wi-Fi.</td></tr>
+        <tr><td>Conectar com <code>connect()</code></td><td><code>wifi.connect(WIFI_SSID, WIFI_SENHA)</code></td><td>Entra na rede <b>Wokwi-GUEST</b>, a rede virtual do simulador, que não tem senha.</td></tr>
+        <tr><td>Cliente <code>umqtt.simple.MQTTClient</code></td><td><code>MQTTClient(CLIENT_ID, BROKER, port=PORTA, ...)</code></td><td>Cria o “cliente” que vai conversar com o broker. O CLIENT_ID precisa ser único no broker.</td></tr>
+        <tr><td>Conectar com <code>connect()</code></td><td><code>c.connect()</code></td><td>Conecta no <code>broker.hivemq.com</code>, porta 1883.</td></tr>
+        <tr><td>Enviar dados com <code>publish()</code></td><td><code>cliente.publish(TOPICO_SENSORES, ...)</code></td><td>Publica os sensores em JSON a cada 5 segundos.</td></tr>
+        <tr><td>Ouvir comandos com <code>subscribe()</code></td><td><code>c.subscribe(TOPICO_COMANDOS)</code></td><td>Assina <code>comandos/#</code>. O <code>#</code> pega os três atuadores de uma vez.</td></tr>
+      </table></div>
+      <p>Outras peças importantes:</p>
+      <ul>
+        <li><b><code>set_callback(ao_receber_comando)</code></b>: diz qual função rodar quando chegar uma mensagem. Ela descobre qual atuador é pelo fim do tópico e liga (<code>ON</code>) ou desliga (<code>OFF</code>).</li>
+        <li><b><code>check_msg()</code></b>: confere se chegou comando <b>sem travar</b> o programa. Por isso o laço roda a cada 0,1 s, mas os sensores só são enviados a cada 5 s.</li>
+        <li><b><code>try / except OSError</code></b>: se a conexão cair, o ESP32 reconecta sozinho em vez de parar.</li>
+      </ul>
+    </li>
+    <li>
+      <h4>Rode a simulação</h4>
+      <p>Clique no botão verde <b>▶</b> em cima do circuito. Embaixo aparece o <b>monitor serial</b>, com as mensagens do <code>print</code>. Em até uns 20 segundos deve aparecer:</p>
+      <div class="ps output"><div class="bar">Monitor serial do Wokwi (esperado)</div>
+<pre>Conectando ao Wi-Fi....... conectado! IP: 10.13.37.2
+Conectando ao broker broker.hivemq.com ...
+MQTT conectado! Ouvindo: estufa-joao/GRUPO_AQUI/comandos/#
+Estado publicado: {'ventilador': 'OFF', 'bomba': 'OFF', 'lampada': 'OFF'}
+Sensores publicados: {'temperatura': 24.0, 'umidade': 40.0, 'solo': 50}</pre></div>
+    </li>
+    <li>
+      <h4>Mexa nos sensores</h4>
+      <p>Com a simulação rodando, <b>clique no DHT22</b>: aparecem barrinhas para mudar temperatura e umidade. <b>Gire o potenciômetro</b> para mudar a umidade do solo. Em até 5 segundos os valores novos aparecem no monitor serial.</p>
+    </li>
+  </ol>
+  <label class="done"><input type="checkbox" data-step="codigo"> Concluí esta etapa</label>
+</section>
+
+<!-- ============ TESTE NO HIVEMQ ============ -->
+<section class="part" id="hivemq">
+  <div class="part-tag"><i style="background:#D8BFD8"></i>Etapa 3 <span class="rubrica">1º ponto</span></div>
+  <h2>Testando o MQTT antes do painel</h2>
+  <p>Antes de montar o painel, confiram se o ESP32 está mesmo conversando com o broker. Para isso existe um cliente MQTT que roda no navegador, da própria HiveMQ. Se algo der errado mais tarde, é aqui que vocês descobrem se o problema está no ESP32 ou no Node-RED.</p>
+  <ol class="steps">
+    <li>
+      <h4>Abra o cliente web da HiveMQ</h4>
+      <p>Deixe o Wokwi rodando numa aba e abra outra aba com:</p>
+      <div class="ps"><div class="bar">Endereço do navegador<button class="copy" data-copy="https://www.hivemq.com/demos/websocket-client/">Copiar</button></div>
+<pre>https://www.hivemq.com/demos/websocket-client/</pre></div>
+      <p>Confira os campos <b>Host</b> <code>broker.hivemq.com</code> e <b>Port</b> <code>8000</code> e clique em <b>Connect</b>. A porta aqui é 8000 (e não 1883) porque o navegador conversa com o broker por <i>WebSocket</i>; o broker é o mesmo.</p>
+    </li>
+    <li>
+      <h4>Assine os tópicos do grupo</h4>
+      <p>Em <b>Subscriptions</b>, clique em <b>Add New Topic Subscription</b>, coloque o tópico abaixo e clique em <b>Subscribe</b>:</p>
+      <div class="ps"><div class="bar">Tópico para assinar<button class="copy" data-copy="estufa-joao/GRUPO_AQUI/#">Copiar</button></div>
+<pre>estufa-joao/GRUPO_AQUI/#</pre></div>
+      <p>Em <b>Messages</b> devem aparecer os sensores a cada 5 segundos. ✅ Isso prova o <code>publish()</code>.</p>
+    </li>
+    <li>
+      <h4>Mande um comando para o ESP32</h4>
+      <p>Em <b>Publish</b>, preencha:</p>
+      <div class="ps"><div class="bar">Topic<button class="copy" data-copy="estufa-joao/GRUPO_AQUI/comandos/lampada">Copiar</button></div>
+<pre>estufa-joao/GRUPO_AQUI/comandos/lampada</pre></div>
+      <p>No campo <b>Message</b> escreva <code>ON</code> e clique em <b>Publish</b>. No Wokwi, o <b>LED amarelo acende</b> e o monitor serial mostra <i>Comando recebido: lampada = ON</i>. ✅ Isso prova o <code>subscribe()</code>. Teste também <code>OFF</code> e os tópicos <code>.../comandos/ventilador</code> e <code>.../comandos/bomba</code>.</p>
+    </li>
+  </ol>
+  <div class="note tip"><b class="k">Dica para o vídeo</b><p>Este teste é ótimo para mostrar no vídeo: dá para ver a mensagem saindo de um lado e chegando do outro.</p></div>
+  <label class="done"><input type="checkbox" data-step="hivemq"> Concluí esta etapa</label>
+</section>
+
+<!-- ============ NODE-RED ============ -->
+<section class="part" id="nodered">
+  <div class="part-tag"><i style="background:var(--dash)"></i>Etapa 4 <span class="rubrica">2º ponto</span></div>
+  <h2>Construindo o painel no Node-RED</h2>
+
+  <h3>Onde rodar o Node-RED</h3>
+  <div class="wrap"><table class="tab">
+    <tr><th>Opção</th><th>Quando usar</th></tr>
+    <tr><td><b>FlowFuse (recomendado)</b></td><td>Roda na nuvem, então funciona em qualquer computador, inclusive no laboratório, e gera um link do painel para entregar. Crie a instância seguindo o <b>tutorial do professor</b>, depois clique em <b>Open Editor</b>.</td></tr>
+    <tr><td>Node-RED local (Docker)</td><td>Só em computadores onde a internet libera a instalação do Dashboard e a porta 1883. Nesse caso, a entrega é o arquivo <code>flows.json</code> exportado (os “scripts”), já que o painel local não tem link público.</td></tr>
+  </table></div>
+
+  <ol class="steps">
+    <li>
+      <h4>Confira se o Dashboard 2.0 está instalado</h4>
+      <p>No editor, digite <b>gauge</b> na busca da paleta. Se aparecer o nó azul <b>gauge</b> na categoria <b>dashboard 2</b>, está pronto. Se não aparecer: menu <b>☰</b> → <b>Gerenciar paleta</b> → aba <b>Instalar</b> → busque <code>@flowfuse/node-red-dashboard</code> → <b>Instalar</b>.</p>
+    </li>
+    <li>
+      <h4>Receba os sensores (mqtt in)</h4>
+      <p>Arraste um <b>mqtt in</b> (categoria rede) e dê duplo clique. Em <b>Servidor</b>, escolha <b>Adicionar novo mqtt-broker…</b> e clique no lápis ✏️:</p>
+      <ul>
+        <li><b>Nome:</b> <code>HiveMQ público</code></li>
+        <li><b>Servidor:</b> <code>broker.hivemq.com</code> &nbsp; <b>Porta:</b> <code>1883</code></li>
+      </ul>
+      <p>Clique em <b>Adicionar</b>. De volta ao mqtt in: <b>Tópico</b> <code>estufa-joao/<span class="g">GRUPO_AQUI</span>/sensores</code>, <b>Saída</b> <b>um objeto JSON analisado</b>, nome <code>Sensores do ESP32</code>. Ligue um <b>debug</b> na saída e clique em <b>Implementar</b>. Com o Wokwi rodando, os dados aparecem na aba 🐞 e o nó mostra <b>conectado</b> em verde.</p>
+    </li>
+    <li>
+      <h4>Separe os três valores (function com 3 saídas)</h4>
+      <p>Cada medidor precisa de um número só, mas a mensagem traz três. Arraste um <b>function</b>, ligue depois do mqtt in, nome <code>Separa os sensores</code>. Na aba <b>Configuração</b> (Setup), mude <b>Saídas</b> para <b>3</b>. Na aba <b>Ao receber mensagem</b>, cole:</p>
+      <div class="ps"><div class="bar">Código do nó function<button class="copy" data-copy="// Chega do ESP32: { temperatura: 26.5, umidade: 55, solo: 40 }&#10;let d = msg.payload;&#10;return [&#10;    { payload: d.temperatura, topic: &quot;Temperatura (°C)&quot; },&#10;    { payload: d.umidade,     topic: &quot;Umidade do ar (%)&quot; },&#10;    { payload: d.solo,        topic: &quot;Umidade do solo (%)&quot; }&#10;];">Copiar</button></div>
+<pre>// Chega do ESP32: { temperatura: 26.5, umidade: 55, solo: 40 }
+let d = msg.payload;
+return [
+    { payload: d.temperatura, topic: "Temperatura (°C)" },
+    { payload: d.umidade,     topic: "Umidade do ar (%)" },
+    { payload: d.solo,        topic: "Umidade do solo (%)" }
+];</pre></div>
+      <p>Saída 1 = temperatura, saída 2 = umidade do ar, saída 3 = umidade do solo. O <code>topic</code> vira o nome da linha no gráfico.</p>
+    </li>
+    <li>
+      <h4>Coloque três medidores (gauge)</h4>
+      <p>Arraste três nós <b>gauge</b> e ligue um em cada saída do function. No primeiro, em <b>Group</b> escolha <b>Add new ui-group…</b>, clique no lápis ✏️, dê o nome <code>Sensores</code> e clique em <b>Adicionar</b> (se pedir <b>Page</b> e <b>UI</b>, faça o mesmo: lápis e Adicionar). Configure:</p>
+      <div class="wrap"><table class="tab">
+        <tr><th>Gauge</th><th>Label</th><th>Units</th><th>Range</th></tr>
+        <tr><td>Saída 1</td><td>Temperatura</td><td>°C</td><td>0 a 50</td></tr>
+        <tr><td>Saída 2</td><td>Umidade do ar</td><td>%</td><td>0 a 100</td></tr>
+        <tr><td>Saída 3</td><td>Umidade do solo</td><td>%</td><td>0 a 100</td></tr>
+      </table></div>
+      <p>Nos outros dois, escolham o mesmo grupo <b>Sensores</b>.</p>
+    </li>
+    <li>
+      <h4>Coloque o gráfico (chart)</h4>
+      <p>Arraste um <b>chart</b>, crie um grupo novo chamado <code>Histórico</code>, <b>Label</b> <code>Histórico</code>, tipo <b>Line</b>. Ligue nele as saídas <b>1 e 2</b> do function (uma saída pode ter vários fios). Cada valor vira uma linha com o nome que está no <code>topic</code>.</p>
+    </li>
+    <li>
+      <h4>Crie os botões dos atuadores (switch + mqtt out)</h4>
+      <p>Arraste três nós <b>switch</b> (o azul, da categoria dashboard 2) e crie um grupo chamado <code>Controles</code>. Em cada um: <b>Label</b> com o nome do atuador, <b>On Payload</b> texto <code>ON</code>, <b>Off Payload</b> texto <code>OFF</code>. Deixe <b>desmarcada</b> a opção de repassar a mensagem de entrada (<i>Pass through</i>).</p>
+      <p>Depois de cada switch, ligue um <b>mqtt out</b> com o servidor <b>HiveMQ público</b> e o tópico:</p>
+      <div class="wrap"><table class="tab">
+        <tr><th>Switch (Label)</th><th>Tópico do mqtt out</th></tr>
+        <tr><td>Ventilador</td><td><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/comandos/ventilador</code></td></tr>
+        <tr><td>Bomba d’água</td><td><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/comandos/bomba</code></td></tr>
+        <tr><td>Lâmpada</td><td><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/comandos/lampada</code></td></tr>
+      </table></div>
+    </li>
+    <li>
+      <h4>Mostre o estado real nos botões (boa prática)</h4>
+      <p>E se o ESP32 reiniciar, ou alguém mandar um comando pelo cliente da HiveMQ? O botão ficaria mostrando a coisa errada. Para resolver, o painel escuta o tópico <b>estado</b> que o ESP32 publica:</p>
+      <p>Arraste outro <b>mqtt in</b>: tópico <code>estufa-joao/<span class="g">GRUPO_AQUI</span>/estado</code>, saída <b>objeto JSON analisado</b>. Ligue um <b>function</b> com <b>3 saídas</b>, nome <code>Atualiza os botões</code>, com o código abaixo, e ligue cada saída na <b>entrada</b> do switch correspondente (1 = Ventilador, 2 = Bomba, 3 = Lâmpada).</p>
+      <div class="ps"><div class="bar">Código do nó function<button class="copy" data-copy="// Chega do ESP32: { ventilador: &quot;ON&quot;, bomba: &quot;OFF&quot;, lampada: &quot;OFF&quot; }&#10;// Atualiza os botões do painel com o estado REAL dos atuadores&#10;let e = msg.payload;&#10;return [&#10;    { payload: e.ventilador },&#10;    { payload: e.bomba },&#10;    { payload: e.lampada }&#10;];">Copiar</button></div>
+<pre>// Chega do ESP32: { ventilador: "ON", bomba: "OFF", lampada: "OFF" }
+// Atualiza os botões do painel com o estado REAL dos atuadores
+let e = msg.payload;
+return [
+    { payload: e.ventilador },
+    { payload: e.bomba },
+    { payload: e.lampada }
+];</pre></div>
+      <p>Como a opção <i>Pass through</i> está desmarcada, o switch só muda a posição e não manda o comando de novo. Assim não se forma um “loop”.</p>
+    </li>
+    <li>
+      <h4>Implemente e abra o painel</h4>
+      <p>Clique em <b>Implementar</b>. Para abrir o painel:</p>
+      <ul>
+        <li><b>No FlowFuse:</b> na página da instância, clique no botão <b>Dashboard</b> (pela setinha dele, <b>Open Direct URL</b> abre numa aba própria). Esse endereço é o <b>link do painel</b> para entregar.</li>
+        <li><b>No Node-RED local:</b> acrescente <code>/dashboard</code> no fim do endereço do editor, por exemplo <code>http://127.0.0.1:1880/dashboard</code>.</li>
+      </ul>
+    </li>
+  </ol>
+
+  <h3>Fluxo pronto, para conferir</h3>
+  <p>Se travarem, importem o fluxo completo (menu ☰ → <b>Importar</b>, cole, Importar, Implementar). Ele já vem com o nome do grupo da <a href="#visao">Etapa 0</a> nos tópicos. Usem como gabarito, mas montem o de vocês: no vídeo, o grupo precisa saber explicar cada nó.</p>
+  <div class="note warn"><b class="k">Importe só se ainda não montou o seu</b><p>Se importar por cima de um painel já montado, podem aparecer grupos e páginas repetidos. Nesse caso, apague um dos dois.</p></div>
+  <details class="json">
+    <summary>Ver o fluxo pronto do painel</summary>
+<pre id="flow-p4">[{"id":"9b00000000000001","type":"mqtt in","name":"Sensores do ESP32","topic":"estufa-joao/GRUPO_AQUI/sensores","qos":"1","datatype":"json","broker":"9b00000000000b01","nl":false,"rap":true,"rh":0,"inputs":0,"x":150,"y":100,"wires":[["9b00000000000002","9b0000000000000f"]]},{"id":"9b00000000000002","type":"function","name":"Separa os sensores","func":"// Chega do ESP32: { temperatura: 26.5, umidade: 55, solo: 40 }\nlet d = msg.payload;\nreturn [\n    { payload: d.temperatura, topic: \"Temperatura (°C)\" },\n    { payload: d.umidade,     topic: \"Umidade do ar (%)\" },\n    { payload: d.solo,        topic: \"Umidade do solo (%)\" }\n];","outputs":3,"timeout":0,"noerr":0,"initialize":"","finalize":"","libs":[],"x":380,"y":100,"wires":[["9b00000000000003","9b00000000000006"],["9b00000000000004","9b00000000000006"],["9b00000000000005"]]},{"id":"9b00000000000003","type":"ui-gauge","name":"Temperatura","group":"9b00000000000a04","order":1,"width":2,"height":3,"gtype":"gauge-half","gstyle":"needle","title":"Temperatura","units":"°C","icon":"","prefix":"","suffix":"","segments":[{"from":"0","color":"#5c9ee6"},{"from":"18","color":"#5cd65c"},{"from":"30","color":"#ea5353"}],"min":0,"max":50,"sizeThickness":16,"sizeGap":4,"sizeKeyThickness":8,"styleRounded":true,"styleGlow":false,"className":"","x":620,"y":60,"wires":[]},{"id":"9b00000000000004","type":"ui-gauge","name":"Umidade do ar","group":"9b00000000000a04","order":2,"width":2,"height":3,"gtype":"gauge-half","gstyle":"needle","title":"Umidade do ar","units":"%","icon":"","prefix":"","suffix":"","segments":[{"from":"0","color":"#ea5353"},{"from":"40","color":"#5cd65c"},{"from":"80","color":"#5c9ee6"}],"min":0,"max":100,"sizeThickness":16,"sizeGap":4,"sizeKeyThickness":8,"styleRounded":true,"styleGlow":false,"className":"","x":620,"y":100,"wires":[]},{"id":"9b00000000000005","type":"ui-gauge","name":"Umidade do solo","group":"9b00000000000a04","order":3,"width":2,"height":3,"gtype":"gauge-half","gstyle":"needle","title":"Umidade do solo","units":"%","icon":"","prefix":"","suffix":"","segments":[{"from":"0","color":"#ea5353"},{"from":"40","color":"#5cd65c"},{"from":"80","color":"#5c9ee6"}],"min":0,"max":100,"sizeThickness":16,"sizeGap":4,"sizeKeyThickness":8,"styleRounded":true,"styleGlow":false,"className":"","x":620,"y":140,"wires":[]},{"id":"9b00000000000006","type":"ui-chart","name":"Histórico","group":"9b00000000000a05","label":"Histórico","order":1,"chartType":"line","category":"topic","categoryType":"msg","xAxisLabel":"","xAxisProperty":"","xAxisPropertyType":"timestamp","xAxisType":"time","xAxisFormat":"","xAxisFormatType":"auto","yAxisLabel":"","yAxisProperty":"payload","yAxisPropertyType":"msg","ymin":"","ymax":"","action":"append","stackSeries":false,"pointShape":"circle","pointRadius":3,"showLegend":true,"removeOlder":1,"removeOlderUnit":"3600","removeOlderPoints":"","colors":["#c62828","#0095ff","#2ca02c","#ff7f0e","#a347e1","#d62728","#ff9896","#9467bd","#c5b0d5"],"textColor":["#666666"],"textColorDefault":true,"gridColor":["#e5e5e5"],"gridColorDefault":true,"width":12,"height":5,"className":"","interpolation":"linear","x":630,"y":200,"wires":[[]]},{"id":"9b0000000000000f","type":"debug","name":"Ver sensores","active":true,"tosidebar":true,"console":false,"tostatus":false,"complete":"payload","targetType":"msg","statusVal":"","statusType":"auto","x":380,"y":160,"wires":[]},{"id":"9b00000000000007","type":"ui-switch","name":"Ventilador","label":"Ventilador","group":"9b00000000000a06","order":1,"width":6,"height":1,"passthru":false,"decouple":"false","topic":"","topicType":"str","style":"","className":"","layout":"row-spaced","clickableArea":"switch","onvalue":"ON","onvalueType":"str","onicon":"","oncolor":"","offvalue":"OFF","offvalueType":"str","officon":"","offcolor":"","x":620,"y":300,"wires":[["9b0000000000000a"]]},{"id":"9b00000000000008","type":"ui-switch","name":"Bomba d'água","label":"Bomba d'água","group":"9b00000000000a06","order":2,"width":6,"height":1,"passthru":false,"decouple":"false","topic":"","topicType":"str","style":"","className":"","layout":"row-spaced","clickableArea":"switch","onvalue":"ON","onvalueType":"str","onicon":"","oncolor":"","offvalue":"OFF","offvalueType":"str","officon":"","offcolor":"","x":620,"y":360,"wires":[["9b0000000000000b"]]},{"id":"9b00000000000009","type":"ui-switch","name":"Lâmpada","label":"Lâmpada","group":"9b00000000000a06","order":3,"width":6,"height":1,"passthru":false,"decouple":"false","topic":"","topicType":"str","style":"","className":"","layout":"row-spaced","clickableArea":"switch","onvalue":"ON","onvalueType":"str","onicon":"","oncolor":"","offvalue":"OFF","offvalueType":"str","officon":"","offcolor":"","x":620,"y":420,"wires":[["9b0000000000000c"]]},{"id":"9b0000000000000a","type":"mqtt out","name":"Comando ventilador","topic":"estufa-joao/GRUPO_AQUI/comandos/ventilador","qos":"1","retain":"false","respTopic":"","contentType":"","userProps":"","correl":"","expiry":"","broker":"9b00000000000b01","x":860,"y":300,"wires":[]},{"id":"9b0000000000000b","type":"mqtt out","name":"Comando bomba","topic":"estufa-joao/GRUPO_AQUI/comandos/bomba","qos":"1","retain":"false","respTopic":"","contentType":"","userProps":"","correl":"","expiry":"","broker":"9b00000000000b01","x":860,"y":360,"wires":[]},{"id":"9b0000000000000c","type":"mqtt out","name":"Comando lâmpada","topic":"estufa-joao/GRUPO_AQUI/comandos/lampada","qos":"1","retain":"false","respTopic":"","contentType":"","userProps":"","correl":"","expiry":"","broker":"9b00000000000b01","x":860,"y":420,"wires":[]},{"id":"9b0000000000000d","type":"mqtt in","name":"Estado dos atuadores","topic":"estufa-joao/GRUPO_AQUI/estado","qos":"1","datatype":"json","broker":"9b00000000000b01","nl":false,"rap":true,"rh":0,"inputs":0,"x":150,"y":360,"wires":[["9b0000000000000e"]]},{"id":"9b0000000000000e","type":"function","name":"Atualiza os botões","func":"// Chega do ESP32: { ventilador: \"ON\", bomba: \"OFF\", lampada: \"OFF\" }\n// Atualiza os botões do painel com o estado REAL dos atuadores\nlet e = msg.payload;\nreturn [\n    { payload: e.ventilador },\n    { payload: e.bomba },\n    { payload: e.lampada }\n];","outputs":3,"timeout":0,"noerr":0,"initialize":"","finalize":"","libs":[],"x":380,"y":360,"wires":[["9b00000000000007"],["9b00000000000008"],["9b00000000000009"]]},{"id":"9b00000000000b01","type":"mqtt-broker","name":"HiveMQ público","broker":"broker.hivemq.com","port":"1883","clientid":"","autoConnect":true,"usetls":false,"protocolVersion":"4","keepalive":"60","cleansession":true,"autoUnsubscribe":true,"birthTopic":"","birthQos":"0","birthPayload":"","birthMsg":{},"closeTopic":"","closeQos":"0","closePayload":"","closeMsg":{},"willTopic":"","willQos":"0","willPayload":"","willMsg":{},"userProps":"","sessionExpiry":""},{"id":"9b00000000000a04","type":"ui-group","name":"Sensores","page":"9b00000000000a03","width":"6","height":"1","order":1,"showTitle":true,"className":"","visible":"true","disabled":"false","groupType":"default"},{"id":"9b00000000000a06","type":"ui-group","name":"Controles","page":"9b00000000000a03","width":"6","height":"1","order":2,"showTitle":true,"className":"","visible":"true","disabled":"false","groupType":"default"},{"id":"9b00000000000a05","type":"ui-group","name":"Histórico","page":"9b00000000000a03","width":"12","height":"1","order":3,"showTitle":true,"className":"","visible":"true","disabled":"false","groupType":"default"},{"id":"9b00000000000a03","type":"ui-page","name":"Estufa do Sr. João","ui":"9b00000000000a01","path":"/estufa","icon":"sprout","layout":"grid","theme":"9b00000000000a02","breakpoints":[{"name":"Default","px":"0","cols":"3"},{"name":"Tablet","px":"576","cols":"6"},{"name":"Small Desktop","px":"768","cols":"9"},{"name":"Desktop","px":"1024","cols":"12"}],"order":1,"className":"","visible":"true","disabled":"false"},{"id":"9b00000000000a01","type":"ui-base","name":"Estufa","path":"/dashboard","includeClientData":true,"acceptsClientConfig":["ui-notification","ui-control"],"showPathInSidebar":false,"showPageTitle":true,"navigationStyle":"default","titleBarStyle":"default"},{"id":"9b00000000000a02","type":"ui-theme","name":"Tema Estufa","colors":{"surface":"#2e7d32","primary":"#2e7d32","bgPage":"#eef1f3","groupBg":"#ffffff","groupOutline":"#cccccc"},"sizes":{"density":"default","pagePadding":"12px","groupGap":"12px","groupBorderRadius":"6px","widgetGap":"12px"}}]</pre>
+    <div class="actions"><button class="copy" data-copy-from="flow-p4">Copiar</button></div>
+  </details>
+
+  <div class="challenge">
+    <h4>Para ir além (opcional)</h4>
+    <p>Hoje o Sr. João precisa apertar os botões. Que tal uma <b>regra automática</b>? Por exemplo: se a umidade do solo ficar abaixo de 30 %, publicar <code>ON</code> em <code>comandos/bomba</code>, e acima de 60 %, <code>OFF</code>. Dá para fazer com um nó <b>switch</b> (o amarelo, da categoria função) ligado na saída 3 do “Separa os sensores”, dois nós <b>change</b> e um <b>mqtt out</b>.</p>
+  </div>
+  <label class="done"><input type="checkbox" data-step="nodered"> Concluí esta etapa</label>
+</section>
+
+<!-- ============ TESTE FINAL ============ -->
+<section class="part" id="final">
+  <div class="part-tag"><i style="background:var(--switch)"></i>Etapa 5</div>
+  <h2>Teste final e depuração</h2>
+  <p>Com o Wokwi rodando numa aba e o painel aberto em outra (de preferência lado a lado), confiram um por um:</p>
+  <ol class="steps">
+    <li><h4>Sensores no painel</h4><p>Mudem a temperatura no DHT22 e girem o potenciômetro. Em até 5 segundos, os medidores e o gráfico acompanham.</p></li>
+    <li><h4>Botões no ESP32</h4><p>Liguem e desliguem cada botão do painel. O LED azul (ventilador), o relé (bomba) e o LED amarelo (lâmpada) obedecem, e o monitor serial mostra o <i>Comando recebido</i>.</p></li>
+    <li><h4>Estado de volta no painel</h4><p>Mandem <code>ON</code> pelo cliente da HiveMQ (Etapa 3). O botão correspondente no painel deve mudar sozinho.</p></li>
+  </ol>
+
+  <h3>Deu problema? Procure o sintoma</h3>
+  <details class="fix"><summary>O monitor serial fica só em “Conectando ao Wi-Fi.....”</summary>
+    <p>Confiram se está escrito exatamente <code>Wokwi-GUEST</code> (com letras maiúsculas e o hífen) e a senha vazia <code>""</code>. Parem e rodem de novo a simulação.</p></details>
+  <details class="fix"><summary>“ImportError: no module named 'umqtt'” ou erro logo na primeira linha</summary>
+    <p>O projeto não é MicroPython. Criem um novo pelo link da Etapa 1 e colem o circuito e o código nele.</p></details>
+  <details class="fix"><summary>“MQTTException: 2” ou o ESP32 fica reconectando sem parar</summary>
+    <p>O <code>CLIENT_ID</code> já está em uso. Isso acontece quando a mesma simulação está aberta em duas abas ou dois computadores do grupo: o broker derruba um para aceitar o outro. Deixem o Wokwi rodando em <b>um só lugar</b>. Se ainda assim continuar, troquem o nome do grupo por algo mais único.</p></details>
+  <details class="fix"><summary>“OSError: [Errno 116] ETIMEDOUT” na leitura do DHT22</summary>
+    <p>O fio de dados do DHT22 (SDA) não está no pino 15, ou falta VCC/GND. Confiram a tabela de ligações.</p></details>
+  <details class="fix"><summary>Os dados aparecem no cliente da HiveMQ, mas não no Node-RED</summary>
+    <p>O problema está no Node-RED: (1) o tópico do mqtt in está diferente, letra por letra, do que o ESP32 usa; (2) o servidor não é <code>broker.hivemq.com</code> porta <code>1883</code>; (3) faltou clicar em Implementar. Olhem se embaixo do mqtt in aparece <b>conectado</b>.</p></details>
+  <details class="fix"><summary>A aba 🐞 mostra os dados, mas os medidores não mexem</summary>
+    <p>O function “Separa os sensores” precisa estar com <b>3 saídas</b> na aba Configuração, e o mqtt in com saída <b>objeto JSON analisado</b> (se vier como texto, <code>d.temperatura</code> fica vazio).</p></details>
+  <details class="fix"><summary>Aperto o botão no painel e nada acontece no Wokwi</summary>
+    <p>Confiram se o tópico do mqtt out termina exatamente em <code>/comandos/ventilador</code>, <code>/comandos/bomba</code> ou <code>/comandos/lampada</code>, e se o On/Off Payload é <code>ON</code>/<code>OFF</code>. Testem o mesmo comando pelo cliente da HiveMQ: se lá funciona, o erro está no painel; se não, está no ESP32. Se só o LED não acende, ele pode estar ao contrário: a perna <b>A</b> vai no resistor e a <b>C</b> no GND.</p></details>
+  <details class="fix"><summary>Os botões ficam ligando e desligando sozinhos</summary>
+    <p>A opção <i>Pass through</i> do switch está marcada, e o estado que volta do ESP32 vira um comando novo. Desmarquem nos três switches.</p></details>
+  <details class="fix"><summary>Aparecem dados estranhos, de outro grupo</summary>
+    <p>Dois grupos escolheram o mesmo nome. Troquem o nome na Etapa 0 e atualizem o código do ESP32 e os tópicos do Node-RED.</p></details>
+  <details class="fix"><summary>O painel parou de atualizar depois de um tempo</summary>
+    <p>O painel só tem dados enquanto a simulação do Wokwi está rodando. Confiram se a aba do Wokwi continua aberta e com o ▶ ativo; se precisar, rodem de novo.</p></details>
+  <label class="done"><input type="checkbox" data-step="final"> Concluí esta etapa</label>
+</section>
+
+<!-- ============ ENTREGA ============ -->
+<section class="part" id="entrega">
+  <div class="part-tag"><i style="background:#C7C7C7"></i>Etapa 6</div>
+  <h2>Vídeo e entrega</h2>
+
+  <h3>Roteiro sugerido para o vídeo (até 5 minutos)</h3>
+  <p>Todos do grupo precisam falar. Uma forma fácil é marcar uma reunião no Teams, compartilhar a tela e gravar: assim cada um fala do seu computador. Ensaiem uma vez antes.</p>
+  <div class="wrap"><table class="tab">
+    <tr><th>Tempo</th><th>O que mostrar</th><th>Quem fala</th></tr>
+    <tr><td>0:00 – 0:30</td><td>Apresentação dos integrantes e do problema da estufa do Sr. João.</td><td>Integrante 1</td></tr>
+    <tr><td>0:30 – 1:15</td><td>O circuito no Wokwi: cada sensor e atuador e o pino onde está ligado.</td><td>Integrante 2</td></tr>
+    <tr><td>1:15 – 2:15</td><td>O código: Wi-Fi (<code>WLAN</code>, <code>active</code>, <code>connect</code>), MQTT (<code>MQTTClient</code>, <code>connect</code>, <code>publish</code>, <code>subscribe</code>) e os tópicos escolhidos.</td><td>Integrante 3</td></tr>
+    <tr><td>2:15 – 3:00</td><td>O fluxo no Node-RED: nós mqtt in, function, medidores, gráfico, switches e mqtt out.</td><td>Integrante 4</td></tr>
+    <tr><td>3:00 – 4:30</td><td><b>Demonstração ao vivo, com Wokwi e painel lado a lado:</b> mudar a temperatura e o potenciômetro e ver o painel mudar; ligar cada atuador pelo painel e ver o LED/relé responder.</td><td>Todos, revezando</td></tr>
+    <tr><td>4:30 – 5:00</td><td>Uma dificuldade que o grupo enfrentou e como resolveu, e uma melhoria futura.</td><td>Integrante 5 (ou quem ainda não falou)</td></tr>
+  </table></div>
+  <div class="note tip"><b class="k">Antes de gravar</b><p>Rodem o teste final da Etapa 5. Deixem a simulação rodando há pelo menos 1 minuto, para o gráfico já ter alguns pontos. Aumentem o zoom do navegador para o código ficar legível no vídeo.</p></div>
+
+  <h3>O que entregar (um envio por grupo)</h3>
+  <ul class="checklist">
+    <li>Nome completo de <b>todos os integrantes</b>.</li>
+    <li><b>Link do projeto no Wokwi</b> (salvo, com o código e o circuito finais).</li>
+    <li><b>Link do painel</b> no FlowFuse (testem antes numa janela anônima). Se usaram Node-RED local, enviem o <code>flows.json</code> (menu ☰ → Exportar → todos os fluxos → Baixar).</li>
+    <li>O <b>nome do grupo / tópicos</b> usados no MQTT, para o professor conseguir testar.</li>
+    <li>O <b>vídeo</b> de até 5 minutos, com a fala de todos.</li>
+  </ul>
+  <div class="note warn"><b class="k">“Mantenham tudo online”</b><p>Não apaguem nem parem a instância do FlowFuse depois da entrega. Para ver o painel funcionando, o professor vai abrir o link do Wokwi e clicar em ▶: por isso o código salvo no Wokwi precisa ser a versão final, com o nome do grupo certo.</p></div>
+  <label class="done"><input type="checkbox" data-step="entrega"> Entregamos a atividade</label>
+</section>
+
+<section class="part">
+  <h2>Materiais de apoio</h2>
+  <p><a href="https://docs.wokwi.com/guides/esp32-wifi" target="_blank" rel="noopener">Wi-Fi no Wokwi</a> · <a href="https://www.hivemq.com/public-mqtt-broker/" target="_blank" rel="noopener">Broker público da HiveMQ</a> · <a href="https://dashboard.flowfuse.com/" target="_blank" rel="noopener">FlowFuse Dashboard</a> · <a href="https://nodered.org/docs/" target="_blank" rel="noopener">Documentação do Node-RED</a> (em inglês).</p>
+</section>
+
+</main>
+
+<footer>Passo 4: Estufa do Sr. João conectada.</footer>
+
+<script>
+(function(){
+  var STEPS = [
+    {id:"visao",    label:"Visão geral",   color:"#A6BBCF", icon:"?"},
+    {id:"circuito", label:"Circuito",      color:"#C8E6C9", icon:"1"},
+    {id:"codigo",   label:"Código ESP32",  color:"#FDD0A2", icon:"2"},
+    {id:"hivemq",   label:"Testar MQTT",   color:"#D8BFD8", icon:"3"},
+    {id:"nodered",  label:"Painel",        color:"#9DD5E8", icon:"4"},
+    {id:"final",    label:"Teste final",   color:"#E2D96E", icon:"5"},
+    {id:"entrega",  label:"Vídeo/entrega", color:"#C7C7C7", icon:"✓"}
+  ];
+  var KEY = "nodered-passo4-progresso";
+  var NS = "http://www.w3.org/2000/svg";
+  var svg = document.getElementById("flowSvg");
+  var W = 150, H = 40, STEP_X = 172;
+
+  function el(tag, attrs, parent){
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function pos(i){ return {x: 20 + i*STEP_X, y: (i % 2 === 0) ? 28 : 98}; }
+
+  // fios primeiro (ficam atrás dos nós)
+  for (var i = 0; i < STEPS.length - 1; i++){
+    var a = pos(i), b = pos(i+1);
+    var x1 = a.x + W, y1 = a.y + H/2, x2 = b.x, y2 = b.y + H/2;
+    el("path", {d:"M"+x1+" "+y1+" C"+(x1+45)+" "+y1+", "+(x2-45)+" "+y2+", "+x2+" "+y2,
+      fill:"none", stroke:"#888", "stroke-width":"3"}, svg);
+  }
+
+  STEPS.forEach(function(s, i){
+    var p = pos(i);
+    var a = el("a", {href:"#"+s.id, class:"fn-node", "aria-label":s.label}, svg);
+    el("rect", {class:"body", x:p.x, y:p.y, width:W, height:H, rx:5, fill:s.color}, a);
+    el("path", {d:"M"+(p.x+5)+" "+p.y+" h21 v"+H+" h-21 a5 5 0 0 1 -5 -5 v-"+(H-10)+" a5 5 0 0 1 5 -5 z", fill:"rgba(0,0,0,.07)"}, a);
+    el("line", {x1:p.x+26, y1:p.y, x2:p.x+26, y2:p.y+H, stroke:"rgba(0,0,0,.12)"}, a);
+    var ic = el("text", {x:p.x+13, y:p.y+25, "text-anchor":"middle", style:"font-weight:700"}, a);
+    ic.textContent = s.icon;
+    var t = el("text", {x:p.x+36, y:p.y+25}, a);
+    t.textContent = s.label;
+    if (i > 0) el("rect", {x:p.x-5, y:p.y+15, width:10, height:10, rx:3, fill:"#d9d9d9", stroke:"#999"}, a);
+    if (i < STEPS.length-1) el("rect", {x:p.x+W-5, y:p.y+15, width:10, height:10, rx:3, fill:"#d9d9d9", stroke:"#999"}, a);
+    var st = el("g", {class:"fn-status", id:"st-"+s.id}, svg);
+    el("rect", {x:p.x+4, y:p.y+H+8, width:9, height:9, rx:2, fill:"#3E8E41"}, st);
+    var stt = el("text", {x:p.x+18, y:p.y+H+17, style:"font-size:13px;fill:#3E8E41"}, st);
+    stt.textContent = "concluído";
+  });
+
+  // progresso salvo no navegador
+  function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch(e){ return {}; } }
+  function save(d){ try { localStorage.setItem(KEY, JSON.stringify(d)); } catch(e){} }
+  var data = load();
+
+  function render(){
+    var n = 0;
+    STEPS.forEach(function(s){
+      var on = !!data[s.id]; if (on) n++;
+      var g = document.getElementById("st-"+s.id); if (g) g.classList.toggle("on", on);
+    });
+    document.getElementById("progText").textContent = n + " de " + STEPS.length + " etapas";
+    document.getElementById("progBar").style.width = (n / STEPS.length * 100) + "%";
+  }
+  document.querySelectorAll("label.done input").forEach(function(cb){
+    cb.checked = !!data[cb.dataset.step];
+    cb.addEventListener("change", function(){ data[cb.dataset.step] = cb.checked; save(data); render(); });
+  });
+  render();
+
+  // botões de copiar
+  function copyText(text, btn){
+    var done = function(){
+      var old = btn.textContent; btn.textContent = "Copiado!"; btn.classList.add("done");
+      setTimeout(function(){ btn.textContent = old; btn.classList.remove("done"); }, 1600);
+    };
+    if (navigator.clipboard && window.isSecureContext){
+      navigator.clipboard.writeText(text).then(done, function(){ fallback(text); done(); });
+    } else { fallback(text); done(); }
+  }
+  function fallback(text){
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch(e){}
+    document.body.removeChild(ta);
+  }
+  document.querySelectorAll(".copy").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var text = btn.dataset.copyFrom
+        ? document.getElementById(btn.dataset.copyFrom).textContent
+        : btn.dataset.copy;
+      copyText(text, btn);
+    });
+  });
+})();
+
+// ---------- personalização com o nome do grupo ----------
+(function(){
+  var TOKEN = "GRUPO_AQUI", GK = "nodered-passo4-grupo";
+  var alvos = [];
+  document.querySelectorAll("pre").forEach(function(el){ if (el.innerHTML.indexOf(TOKEN) >= 0) alvos.push({el:el, tipo:"html", orig:el.innerHTML}); });
+  document.querySelectorAll("[data-copy]").forEach(function(el){ if (el.dataset.copy.indexOf(TOKEN) >= 0) alvos.push({el:el, tipo:"copy", orig:el.dataset.copy}); });
+  var input = document.getElementById("grupo");
+  function limpar(v){ return v.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9-]/g,"-").replace(/-+/g,"-").replace(/^-|-$/g,"").slice(0,30); }
+  function aplicar(v){
+    var g = v || TOKEN;
+    alvos.forEach(function(a){
+      var novo = a.orig.split(TOKEN).join(g);
+      if (a.tipo === "html") a.el.innerHTML = novo; else a.el.dataset.copy = novo;
+    });
+    document.querySelectorAll(".g").forEach(function(s){ s.textContent = g; });
+    document.getElementById("grupoStatus").textContent = v ? "✅ Todos os códigos desta página já estão com o nome \"" + v + "\"." : "⚠️ Ainda sem nome: os códigos mostram GRUPO_AQUI.";
+  }
+  var salvo = ""; try { salvo = localStorage.getItem(GK) || ""; } catch(e){}
+  input.value = salvo; aplicar(salvo);
+  input.addEventListener("input", function(){
+    var v = limpar(input.value);
+    try { localStorage.setItem(GK, v); } catch(e){}
+    aplicar(v);
+  });
+  input.addEventListener("blur", function(){ input.value = limpar(input.value); });
+})();
+</script>
+</body>
+</html>
