@@ -803,6 +803,8 @@ Sensores publicados: {'temperatura': 24.0, 'umidade': 40.0, 'solo': 50}</pre></d
   </ol>
 
   <h3>Não funcionou?</h3>
+  <details class="fix"><summary>Aparece “Not connected” ao clicar em Subscribe</summary>
+    <p>Você tentou assinar antes de conectar. Feche a janelinha, clique em <b>Connect</b> e só assine depois que a bolinha ficar <b>verde</b>.</p></details>
   <details class="fix"><summary>A bolinha não fica verde</summary>
     <p>Se aparecer <i>Connect failed … Connect timed out</i>: confira se o Host está exatamente <code>broker.hivemq.com</code>, a Port <code>8884</code> e a caixinha <b>SSL</b> marcada. No navegador <b>Brave</b>, clique no leão 🦁 da barra de endereço e desligue os <i>Shields</i> para esse site. Se nada disso resolver, a rede está bloqueando a porta: teste roteando a internet do celular ou em casa. O Wokwi continua funcionando mesmo assim.</p></details>
   <details class="fix"><summary>Conectou, mas não chega nada em Messages</summary>
@@ -810,6 +812,8 @@ Sensores publicados: {'temperatura': 24.0, 'umidade': 40.0, 'solo': 50}</pre></d
   <details class="fix"><summary>Publiquei ON e o LED não acendeu</summary>
     <p>Confira o tópico (tem que terminar em <code>/comandos/lampada</code>) e se a mensagem é só <code>ON</code>, sem espaços. Veja no monitor serial se aparece <i>Comando recebido</i>: se aparece, o problema é a ligação do LED (perna A no resistor, C no GND).</p></details>
 
+  <div class="note ok"><b class="k">Plano B: a rede bloqueia o cliente da HiveMQ?</b>
+    <p>Este teste é só uma conferência; pode pular. Façam a mesma checagem no Node-RED do <b>FlowFuse</b>, que roda na nuvem e não depende da rede da sala: na Etapa 4, passo 2, o nó <b>mqtt in</b> ligado ao <b>debug</b> já mostra os dados do Wokwi na aba 🐞 (isso prova o <code>publish()</code>). E os botões do painel, no fim da Etapa 4, acendendo os LEDs no Wokwi provam o <code>subscribe()</code>.</p></div>
   <div class="note tip"><b class="k">Dica para o vídeo</b><p>Este teste é ótimo para mostrar no vídeo: deixem a HiveMQ e o Wokwi lado a lado e mostrem a mensagem saindo de um lado e chegando do outro.</p></div>
   <label class="done"><input type="checkbox" data-step="hivemq"> Concluí esta etapa</label>
 </section>
