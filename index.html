@@ -238,6 +238,13 @@ table code,dl code,li code,p code{white-space:normal;overflow-wrap:anywhere}
 .hv-btn{background:#2a9fd6;color:#fff;padding:5px 10px;font-size:13px;border-radius:2px}
 .hv-grid{display:grid;grid-template-columns:1.6fr 1fr}
 @media (max-width:640px){.hv-grid{grid-template-columns:1fr}}
+
+.nr-final{background:#F8FAFB;border:1px solid var(--line);border-radius:8px;padding:14px 16px;margin:12px 0}
+.nr-row{display:flex;align-items:center;flex-wrap:wrap;row-gap:8px;margin:6px 0}
+.nr-cap{font-size:15px;color:var(--muted);margin:2px 0 14px;font-style:italic}
+table.cfg{max-width:640px}
+table.cfg th[colspan]{background:#1E2B36;color:#fff}
+table.cfg td:first-child{font-weight:700;width:34%}
 </style>
 </head>
 <body>
@@ -822,31 +829,78 @@ Sensores publicados: {'temperatura': 24.0, 'umidade': 40.0, 'solo': 50}</pre></d
 <section class="part" id="nodered">
   <div class="part-tag"><i style="background:var(--dash)"></i>Etapa 4 <span class="rubrica">2º ponto</span></div>
   <h2>Construindo o painel no Node-RED</h2>
+  <p>Nesta etapa o grupo monta, no Node-RED, um painel com <b>3 medidores</b>, <b>1 gráfico</b> e <b>3 botões</b>. Vamos montar em blocos, testando cada um antes de passar para o próximo.</p>
 
-  <h3>Onde rodar o Node-RED</h3>
-  <div class="wrap"><table class="tab">
-    <tr><th>Opção</th><th>Quando usar</th></tr>
-    <tr><td><b>FlowFuse (recomendado)</b></td><td>Roda na nuvem, então funciona em qualquer computador, inclusive no laboratório, e gera um link do painel para entregar. Crie a instância seguindo o <b>tutorial do professor</b>, depois clique em <b>Open Editor</b>.</td></tr>
-    <tr><td>Node-RED local (Docker)</td><td>Só em computadores onde a internet libera a instalação do Dashboard e a porta 1883. Nesse caso, a entrega é o arquivo <code>flows.json</code> exportado (os “scripts”), já que o painel local não tem link público.</td></tr>
-  </table></div>
+  <h3>Onde vamos chegar</h3>
+  <p>Este é o fluxo completo, pronto. Volte a este desenho sempre que se perder:</p>
+  <div class="nr-final" aria-label="Fluxo final do painel">
+  <div class="nr-row"><span class="fnode c-mqtt">mqtt in: sensores</span><span class="wire"></span><span class="fnode c-function">Separa os sensores</span><span class="wire"></span>
+    <div class="branch"><div class="row"><span class="fnode c-dash">gauge Temperatura</span></div><div class="row"><span class="fnode c-dash">gauge Umidade do ar</span></div><div class="row"><span class="fnode c-dash">gauge Umidade do solo</span></div><div class="row"><span class="fnode c-dash">chart Histórico</span></div></div></div>
+  <p class="nr-cap">Blocos 1 a 4: os dados do ESP32 viram medidores e gráfico.</p>
+  <div class="nr-row"><span class="fnode c-dash">switch Ventilador</span><span class="wire"></span><span class="fnode c-mqtt">mqtt out: comandos/ventilador</span></div>
+  <div class="nr-row"><span class="fnode c-dash">switch Bomba d’água</span><span class="wire"></span><span class="fnode c-mqtt">mqtt out: comandos/bomba</span></div>
+  <div class="nr-row"><span class="fnode c-dash">switch Lâmpada</span><span class="wire"></span><span class="fnode c-mqtt">mqtt out: comandos/lampada</span></div>
+  <p class="nr-cap">Bloco 5: os botões do painel mandam comandos para o ESP32.</p>
+  <div class="nr-row"><span class="fnode c-mqtt">mqtt in: estado</span><span class="wire"></span><span class="fnode c-function">Atualiza os botões</span><span class="wire"></span><span class="fnode c-dash">entrada dos 3 switches</span></div>
+  <p class="nr-cap">Bloco 6 (opcional): o painel mostra o estado real dos atuadores.</p>
+</div>
 
+  <h3>Antes de começar</h3>
   <ol class="steps">
     <li>
-      <h4>Confira se o Dashboard 2.0 está instalado</h4>
-      <p>No editor, digite <b>gauge</b> na busca da paleta. Se aparecer o nó azul <b>gauge</b> na categoria <b>dashboard 2</b>, está pronto. Se não aparecer: menu <b>☰</b> → <b>Gerenciar paleta</b> → aba <b>Instalar</b> → busque <code>@flowfuse/node-red-dashboard</code> → <b>Instalar</b>.</p>
+      <h4>Abra o editor do Node-RED</h4>
+      <p><b>FlowFuse (recomendado):</b> crie a instância pelo tutorial do professor e clique em <b>Open Editor</b>. Ele roda na nuvem, funciona em qualquer rede e gera o link do painel para entregar.</p>
+      <p><b>Node-RED local:</b> só se o Dashboard instalar no seu computador. Nesse caso, a entrega é o arquivo <code>flows.json</code> exportado.</p>
     </li>
     <li>
-      <h4>Receba os sensores (mqtt in)</h4>
-      <p>Arraste um <b>mqtt in</b> (categoria rede) e dê duplo clique. Em <b>Servidor</b>, escolha <b>Adicionar novo mqtt-broker…</b> e clique no lápis ✏️:</p>
-      <ul>
-        <li><b>Nome:</b> <code>HiveMQ público</code></li>
-        <li><b>Servidor:</b> <code>broker.hivemq.com</code> &nbsp; <b>Porta:</b> <code>1883</code></li>
-      </ul>
-      <p>Clique em <b>Adicionar</b>. De volta ao mqtt in: <b>Tópico</b> <code>estufa-joao/<span class="g">GRUPO_AQUI</span>/sensores</code>, <b>Saída</b> <b>um objeto JSON analisado</b>, nome <code>Sensores do ESP32</code>. Ligue um <b>debug</b> na saída e clique em <b>Implementar</b>. Com o Wokwi rodando, os dados aparecem na aba 🐞 e o nó mostra <b>conectado</b> em verde.</p>
+      <h4>Confira se os nós de painel estão instalados</h4>
+      <p>Na busca da paleta (à esquerda), digite <b>gauge</b>. Se aparecer um nó <b>azul</b> chamado gauge, na categoria <b>dashboard 2</b>, está tudo certo.</p>
+      <p>Se não aparecer: menu <b>☰</b> (canto superior direito) → <b>Gerenciar paleta</b> → aba <b>Instalar</b> → busque <code>@flowfuse/node-red-dashboard</code> → <b>Instalar</b>.</p>
     </li>
     <li>
-      <h4>Separe os três valores (function com 3 saídas)</h4>
-      <p>Cada medidor precisa de um número só, mas a mensagem traz três. Arraste um <b>function</b>, ligue depois do mqtt in, nome <code>Separa os sensores</code>. Na aba <b>Configuração</b> (Setup), mude <b>Saídas</b> para <b>3</b>. Na aba <b>Ao receber mensagem</b>, cole:</p>
+      <h4>Deixe o Wokwi rodando</h4>
+      <p>Numa outra aba, a simulação do Wokwi precisa estar ligada (▶). Sem ela, não chega nenhum dado no Node-RED.</p>
+    </li>
+  </ol>
+
+  <h3>Bloco 1: receber os sensores</h3>
+  <ol class="steps">
+    <li>
+      <h4>Coloque um nó mqtt in</h4>
+      <p>Busque <b>mqtt in</b> na paleta (categoria rede) e arraste para a área de trabalho. Dê <b>duplo clique</b> nele.</p>
+    </li>
+    <li>
+      <h4>Cadastre o broker (só uma vez)</h4>
+      <p>No campo <b>Servidor</b>, escolha <b>Adicionar novo mqtt-broker…</b> e clique no lápis ✏️ ao lado. Preencha e clique em <b>Adicionar</b>:</p>
+      <table class="tab cfg"><tr><th colspan="2">Broker (servidor MQTT)</th></tr><tr><th>Campo</th><th>O que colocar</th></tr><tr><td>Nome</td><td><code>HiveMQ público</code></td></tr><tr><td>Servidor</td><td><code>broker.hivemq.com</code></td></tr><tr><td>Porta</td><td><code>1883</code></td></tr><tr><td>Usar TLS</td><td>deixe <b>desmarcado</b></td></tr></table>
+      <p>Daqui para frente, em todos os nós mqtt, é só escolher <b>HiveMQ público</b> na lista: não precisa cadastrar de novo.</p>
+    </li>
+    <li>
+      <h4>Configure o mqtt in</h4>
+      <p>De volta à janela do mqtt in, preencha e clique em <b>Concluído</b>:</p>
+      <table class="tab cfg"><tr><th colspan="2">mqtt in</th></tr><tr><th>Campo</th><th>O que colocar</th></tr><tr><td>Servidor</td><td>HiveMQ público</td></tr><tr><td>Tópico</td><td><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/sensores</code></td></tr><tr><td>Saída</td><td><b>um objeto JSON analisado</b> (a parsed JSON object)</td></tr><tr><td>Nome</td><td><code>Sensores do ESP32</code></td></tr></table>
+    </li>
+    <li>
+      <h4>Teste com um debug</h4>
+      <p>Arraste um nó <b>debug</b> (verde) e ligue a bolinha da direita do mqtt in na bolinha da esquerda do debug. Clique em <b>Implementar</b> e abra a aba 🐞 à direita.</p>
+      <div class="note ok"><b class="k">Confira</b><p>Embaixo do mqtt in aparece <b>conectado</b> em verde, e a cada 5 segundos chega na aba 🐞 algo como <code>{temperatura: 24, umidade: 40, solo: 42}</code>. Se não chegar nada, não siga em frente: veja “Teste final e depuração” (Etapa 5).</p></div>
+    </li>
+  </ol>
+
+  <h3>Bloco 2: separar os três valores</h3>
+  <p>A mensagem do ESP32 traz três números juntos, mas cada medidor só entende um número. O nó function vai separar em <b>três saídas</b>.</p>
+  <ol class="steps">
+    <li>
+      <h4>Coloque um nó function</h4>
+      <p>Arraste um <b>function</b> (laranja) e ligue a saída do mqtt in na entrada dele. Pode deixar o debug ligado também. Dê duplo clique no function.</p>
+    </li>
+    <li>
+      <h4>Mude para 3 saídas</h4>
+      <p>Na aba <b>Configuração</b> (Setup) da janela, mude <b>Saídas</b> de 1 para <b>3</b>. No campo Nome, escreva <code>Separa os sensores</code>.</p>
+    </li>
+    <li>
+      <h4>Cole o código</h4>
+      <p>Vá para a aba <b>Ao receber mensagem</b> (On Message), apague o que tiver, cole o código abaixo e clique em <b>Concluído</b>:</p>
       <div class="ps"><div class="bar">Código do nó function<button class="copy" data-copy="// Chega do ESP32: { temperatura: 26.5, umidade: 55, solo: 40 }&#10;let d = msg.payload;&#10;return [&#10;    { payload: d.temperatura, topic: &quot;Temperatura (°C)&quot; },&#10;    { payload: d.umidade,     topic: &quot;Umidade do ar (%)&quot; },&#10;    { payload: d.solo,        topic: &quot;Umidade do solo (%)&quot; }&#10;];">Copiar</button></div>
 <pre>// Chega do ESP32: { temperatura: 26.5, umidade: 55, solo: 40 }
 let d = msg.payload;
@@ -855,38 +909,97 @@ return [
     { payload: d.umidade,     topic: "Umidade do ar (%)" },
     { payload: d.solo,        topic: "Umidade do solo (%)" }
 ];</pre></div>
-      <p>Saída 1 = temperatura, saída 2 = umidade do ar, saída 3 = umidade do solo. O <code>topic</code> vira o nome da linha no gráfico.</p>
+      <div class="note ok"><b class="k">Confira</b><p>O nó function agora tem <b>3 bolinhas</b> do lado direito. De cima para baixo: 1 = temperatura, 2 = umidade do ar, 3 = umidade do solo.</p></div>
+    </li>
+  </ol>
+
+  <h3>Bloco 3: os medidores</h3>
+  <ol class="steps">
+    <li>
+      <h4>Coloque o primeiro gauge</h4>
+      <p>Busque <b>gauge</b>, arraste e ligue na <b>saída 1</b> (a de cima) do function. Dê duplo clique.</p>
     </li>
     <li>
-      <h4>Coloque três medidores (gauge)</h4>
-      <p>Arraste três nós <b>gauge</b> e ligue um em cada saída do function. No primeiro, em <b>Group</b> escolha <b>Add new ui-group…</b>, clique no lápis ✏️, dê o nome <code>Sensores</code> e clique em <b>Adicionar</b> (se pedir <b>Page</b> e <b>UI</b>, faça o mesmo: lápis e Adicionar). Configure:</p>
+      <h4>Crie o grupo “Sensores”</h4>
+      <p>No campo <b>Group</b>, escolha <b>Add new ui-group…</b> e clique no lápis ✏️. Em Name escreva <code>Sensores</code> e clique em <b>Adicionar</b>. Se aparecerem os campos <b>Page</b> e <b>UI</b> vazios, faça o mesmo neles: lápis e Adicionar, sem mudar nada.</p>
+      <p>O grupo é a “caixinha” onde os medidores aparecem juntos no painel.</p>
+    </li>
+    <li>
+      <h4>Configure os três gauges</h4>
+      <p>Termine o primeiro e repita para os outros dois, ligando cada um na sua saída. Nos outros dois, em <b>Group</b> é só escolher <b>Sensores</b>, que já existe.</p>
       <div class="wrap"><table class="tab">
-        <tr><th>Gauge</th><th>Label</th><th>Units</th><th>Range</th></tr>
-        <tr><td>Saída 1</td><td>Temperatura</td><td>°C</td><td>0 a 50</td></tr>
-        <tr><td>Saída 2</td><td>Umidade do ar</td><td>%</td><td>0 a 100</td></tr>
-        <tr><td>Saída 3</td><td>Umidade do solo</td><td>%</td><td>0 a 100</td></tr>
-      </table></div>
-      <p>Nos outros dois, escolham o mesmo grupo <b>Sensores</b>.</p>
-    </li>
-    <li>
-      <h4>Coloque o gráfico (chart)</h4>
-      <p>Arraste um <b>chart</b>, crie um grupo novo chamado <code>Histórico</code>, <b>Label</b> <code>Histórico</code>, tipo <b>Line</b>. Ligue nele as saídas <b>1 e 2</b> do function (uma saída pode ter vários fios). Cada valor vira uma linha com o nome que está no <code>topic</code>.</p>
-    </li>
-    <li>
-      <h4>Crie os botões dos atuadores (switch + mqtt out)</h4>
-      <p>Arraste três nós <b>switch</b> (o azul, da categoria dashboard 2) e crie um grupo chamado <code>Controles</code>. Em cada um: <b>Label</b> com o nome do atuador, <b>On Payload</b> texto <code>ON</code>, <b>Off Payload</b> texto <code>OFF</code>. Deixe <b>desmarcada</b> a opção de repassar a mensagem de entrada (<i>Pass through</i>).</p>
-      <p>Depois de cada switch, ligue um <b>mqtt out</b> com o servidor <b>HiveMQ público</b> e o tópico:</p>
-      <div class="wrap"><table class="tab">
-        <tr><th>Switch (Label)</th><th>Tópico do mqtt out</th></tr>
-        <tr><td>Ventilador</td><td><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/comandos/ventilador</code></td></tr>
-        <tr><td>Bomba d’água</td><td><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/comandos/bomba</code></td></tr>
-        <tr><td>Lâmpada</td><td><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/comandos/lampada</code></td></tr>
+        <tr><th>Liga na</th><th>Label</th><th>Units</th><th>Range (min / max)</th></tr>
+        <tr><td>Saída 1</td><td><code>Temperatura</code></td><td><code>°C</code></td><td>0 / 50</td></tr>
+        <tr><td>Saída 2</td><td><code>Umidade do ar</code></td><td><code>%</code></td><td>0 / 100</td></tr>
+        <tr><td>Saída 3</td><td><code>Umidade do solo</code></td><td><code>%</code></td><td>0 / 100</td></tr>
       </table></div>
     </li>
+  </ol>
+
+  <h3>Bloco 4: o gráfico</h3>
+  <ol class="steps">
     <li>
-      <h4>Mostre o estado real nos botões (boa prática)</h4>
-      <p>E se o ESP32 reiniciar, ou alguém mandar um comando pelo cliente da HiveMQ? O botão ficaria mostrando a coisa errada. Para resolver, o painel escuta o tópico <b>estado</b> que o ESP32 publica:</p>
-      <p>Arraste outro <b>mqtt in</b>: tópico <code>estufa-joao/<span class="g">GRUPO_AQUI</span>/estado</code>, saída <b>objeto JSON analisado</b>. Ligue um <b>function</b> com <b>3 saídas</b>, nome <code>Atualiza os botões</code>, com o código abaixo, e ligue cada saída na <b>entrada</b> do switch correspondente (1 = Ventilador, 2 = Bomba, 3 = Lâmpada).</p>
+      <h4>Coloque o chart</h4>
+      <p>Busque <b>chart</b> e arraste. Ligue nele a <b>saída 1</b> e também a <b>saída 2</b> do function: uma mesma saída pode ter vários fios.</p>
+    </li>
+    <li>
+      <h4>Configure</h4>
+      <table class="tab cfg"><tr><th colspan="2">chart</th></tr><tr><th>Campo</th><th>O que colocar</th></tr><tr><td>Group</td><td>crie um novo: <code>Histórico</code> (lápis ✏️ → Adicionar)</td></tr><tr><td>Label</td><td><code>Histórico</code></td></tr><tr><td>Type</td><td><b>Line</b></td></tr></table>
+      <p>Cada valor vira uma linha no gráfico, com o nome que veio do código (“Temperatura (°C)”, “Umidade do ar (%)”).</p>
+    </li>
+    <li>
+      <h4>Teste o painel</h4>
+      <p>Clique em <b>Implementar</b> e abra o painel:</p>
+      <ul>
+        <li><b>FlowFuse:</b> na página da instância, botão <b>Dashboard</b>.</li>
+        <li><b>Local:</b> acrescente <code>/dashboard</code> no fim do endereço do editor.</li>
+      </ul>
+      <div class="note ok"><b class="k">Confira</b><p>Aparecem os 3 medidores e o gráfico. Mexa no DHT22 e no potenciômetro do Wokwi: em até 5 segundos o painel acompanha.</p></div>
+    </li>
+  </ol>
+
+  <h3>Bloco 5: os botões que controlam a estufa</h3>
+  <p>Agora o caminho é o contrário: o painel <b>manda</b> comandos para o ESP32. Cada botão (switch) se liga a um <b>mqtt out</b>. Faça um atuador de cada vez.</p>
+  <ol class="steps">
+    <li>
+      <h4>Coloque o switch do ventilador</h4>
+      <p>Busque <b>switch</b> e use o <b>azul</b>, da categoria <b>dashboard 2</b> (o amarelo, da categoria função, é outro nó). Arraste para um espaço vazio, abaixo do resto, e dê duplo clique:</p>
+      <table class="tab cfg"><tr><th colspan="2">switch</th></tr><tr><th>Campo</th><th>O que colocar</th></tr><tr><td>Group</td><td>crie um novo: <code>Controles</code></td></tr><tr><td>Label</td><td><code>Ventilador</code></td></tr><tr><td>On Payload</td><td>troque o tipo para texto (<b>a<sub>z</sub></b>) e escreva <code>ON</code></td></tr><tr><td>Off Payload</td><td>texto <code>OFF</code></td></tr><tr><td>Pass through</td><td>deixe <b>desmarcado</b></td></tr></table>
+      <p>A entrada do switch fica sem fio por enquanto.</p>
+    </li>
+    <li>
+      <h4>Ligue um mqtt out no switch</h4>
+      <p>Busque <b>mqtt out</b>, arraste para a direita do switch e ligue a saída do switch nele. Duplo clique:</p>
+      <table class="tab cfg"><tr><th colspan="2">mqtt out</th></tr><tr><th>Campo</th><th>O que colocar</th></tr><tr><td>Servidor</td><td>HiveMQ público</td></tr><tr><td>Tópico</td><td><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/comandos/ventilador</code></td></tr><tr><td>Nome</td><td><code>Comando ventilador</code></td></tr></table>
+    </li>
+    <li>
+      <h4>Teste o ventilador</h4>
+      <p>Clique em <b>Implementar</b>, vá ao painel e ligue o botão <b>Ventilador</b>.</p>
+      <div class="note ok"><b class="k">Confira</b><p>No Wokwi, o <b>LED azul acende</b> e o monitor serial mostra <i>Comando recebido: ventilador = ON</i>.</p></div>
+    </li>
+    <li>
+      <h4>Repita para a bomba e a lâmpada</h4>
+      <p>Mais dois pares switch + mqtt out, no mesmo grupo <b>Controles</b>. Só mudam o Label e o fim do tópico:</p>
+      <div class="wrap"><table class="tab">
+        <tr><th>Switch: Label</th><th>mqtt out: Tópico</th><th>O que acende no Wokwi</th></tr>
+        <tr><td><code>Bomba d’água</code></td><td><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/comandos/bomba</code></td><td>O LED do relé</td></tr>
+        <tr><td><code>Lâmpada</code></td><td><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/comandos/lampada</code></td><td>O LED amarelo</td></tr>
+      </table></div>
+      <p>Dica: selecione o par já pronto do ventilador, copie (<kbd>Ctrl</kbd> + <kbd>C</kbd>), cole (<kbd>Ctrl</kbd> + <kbd>V</kbd>) e só troque o Label e o tópico.</p>
+    </li>
+  </ol>
+  <div class="note ok"><b class="k">Neste ponto o painel já vale os pontos da avaliação</b><p>Medidores, gráfico e botões controlando os atuadores. O Bloco 6 é uma melhoria.</p></div>
+
+  <h3>Bloco 6 (opcional): botões mostrando o estado real</h3>
+  <p>Se o ESP32 reiniciar, ou alguém mandar um comando por fora (pelo cliente da HiveMQ, por exemplo), o botão do painel fica mostrando a posição errada. Para corrigir, o painel “escuta” o tópico <b>estado</b>, que o ESP32 publica toda vez que um atuador muda.</p>
+  <ol class="steps">
+    <li>
+      <h4>Coloque outro mqtt in</h4>
+      <table class="tab cfg"><tr><th colspan="2">mqtt in</th></tr><tr><th>Campo</th><th>O que colocar</th></tr><tr><td>Servidor</td><td>HiveMQ público</td></tr><tr><td>Tópico</td><td><code>estufa-joao/<span class="g">GRUPO_AQUI</span>/estado</code></td></tr><tr><td>Saída</td><td><b>um objeto JSON analisado</b></td></tr><tr><td>Nome</td><td><code>Estado dos atuadores</code></td></tr></table>
+    </li>
+    <li>
+      <h4>Coloque um function com 3 saídas</h4>
+      <p>Ligue depois do mqtt in. Na aba <b>Configuração</b>, <b>Saídas = 3</b>; nome <code>Atualiza os botões</code>; na aba <b>Ao receber mensagem</b>, cole:</p>
       <div class="ps"><div class="bar">Código do nó function<button class="copy" data-copy="// Chega do ESP32: { ventilador: &quot;ON&quot;, bomba: &quot;OFF&quot;, lampada: &quot;OFF&quot; }&#10;// Atualiza os botões do painel com o estado REAL dos atuadores&#10;let e = msg.payload;&#10;return [&#10;    { payload: e.ventilador },&#10;    { payload: e.bomba },&#10;    { payload: e.lampada }&#10;];">Copiar</button></div>
 <pre>// Chega do ESP32: { ventilador: "ON", bomba: "OFF", lampada: "OFF" }
 // Atualiza os botões do painel com o estado REAL dos atuadores
@@ -896,21 +1009,17 @@ return [
     { payload: e.bomba },
     { payload: e.lampada }
 ];</pre></div>
-      <p>Como a opção <i>Pass through</i> está desmarcada, o switch só muda a posição e não manda o comando de novo. Assim não se forma um “loop”.</p>
     </li>
     <li>
-      <h4>Implemente e abra o painel</h4>
-      <p>Clique em <b>Implementar</b>. Para abrir o painel:</p>
-      <ul>
-        <li><b>No FlowFuse:</b> na página da instância, clique no botão <b>Dashboard</b> (pela setinha dele, <b>Open Direct URL</b> abre numa aba própria). Esse endereço é o <b>link do painel</b> para entregar.</li>
-        <li><b>No Node-RED local:</b> acrescente <code>/dashboard</code> no fim do endereço do editor, por exemplo <code>http://127.0.0.1:1880/dashboard</code>.</li>
-      </ul>
+      <h4>Ligue as saídas na ENTRADA dos switches</h4>
+      <p>Saída 1 → bolinha da <b>esquerda</b> do switch Ventilador; saída 2 → switch Bomba d’água; saída 3 → switch Lâmpada. Clique em <b>Implementar</b>.</p>
+      <div class="note ok"><b class="k">Confira</b><p>Mande <code>ON</code> pelo cliente da HiveMQ (Etapa 3): o botão do painel muda sozinho. Como o <i>Pass through</i> está desmarcado, o switch só muda de posição e não manda o comando de novo, por isso não vira um “loop”.</p></div>
     </li>
   </ol>
 
-  <h3>Fluxo pronto, para conferir</h3>
-  <p>Se travarem, importem o fluxo completo (menu ☰ → <b>Importar</b>, cole, Importar, Implementar). Ele já vem com o nome do grupo da <a href="#visao">Etapa 0</a> nos tópicos. Usem como gabarito, mas montem o de vocês: no vídeo, o grupo precisa saber explicar cada nó.</p>
-  <div class="note warn"><b class="k">Importe só se ainda não montou o seu</b><p>Se importar por cima de um painel já montado, podem aparecer grupos e páginas repetidos. Nesse caso, apague um dos dois.</p></div>
+  <h3>Travou? Importe o fluxo pronto</h3>
+  <p>O fluxo abaixo é o desenho do início da etapa, completo e já com o nome do grupo (Etapa 0) nos tópicos. Para importar: menu <b>☰</b> → <b>Importar</b> → cole → <b>Importar</b> → clique na área de trabalho → <b>Implementar</b>. Usem como gabarito, mas saibam explicar cada nó no vídeo.</p>
+  <div class="note warn"><b class="k">Importe só se ainda não montou o seu</b><p>Por cima de um painel já montado, podem aparecer grupos e páginas repetidos. Nesse caso, apague um dos dois.</p></div>
   <details class="json">
     <summary>Ver o fluxo pronto do painel</summary>
 <pre id="flow-p4">[{"id":"9b00000000000001","type":"mqtt in","name":"Sensores do ESP32","topic":"estufa-joao/GRUPO_AQUI/sensores","qos":"1","datatype":"json","broker":"9b00000000000b01","nl":false,"rap":true,"rh":0,"inputs":0,"x":150,"y":100,"wires":[["9b00000000000002","9b0000000000000f"]]},{"id":"9b00000000000002","type":"function","name":"Separa os sensores","func":"// Chega do ESP32: { temperatura: 26.5, umidade: 55, solo: 40 }\nlet d = msg.payload;\nreturn [\n    { payload: d.temperatura, topic: \"Temperatura (°C)\" },\n    { payload: d.umidade,     topic: \"Umidade do ar (%)\" },\n    { payload: d.solo,        topic: \"Umidade do solo (%)\" }\n];","outputs":3,"timeout":0,"noerr":0,"initialize":"","finalize":"","libs":[],"x":380,"y":100,"wires":[["9b00000000000003","9b00000000000006"],["9b00000000000004","9b00000000000006"],["9b00000000000005"]]},{"id":"9b00000000000003","type":"ui-gauge","name":"Temperatura","group":"9b00000000000a04","order":1,"width":2,"height":3,"gtype":"gauge-half","gstyle":"needle","title":"Temperatura","units":"°C","icon":"","prefix":"","suffix":"","segments":[{"from":"0","color":"#5c9ee6"},{"from":"18","color":"#5cd65c"},{"from":"30","color":"#ea5353"}],"min":0,"max":50,"sizeThickness":16,"sizeGap":4,"sizeKeyThickness":8,"styleRounded":true,"styleGlow":false,"className":"","x":620,"y":60,"wires":[]},{"id":"9b00000000000004","type":"ui-gauge","name":"Umidade do ar","group":"9b00000000000a04","order":2,"width":2,"height":3,"gtype":"gauge-half","gstyle":"needle","title":"Umidade do ar","units":"%","icon":"","prefix":"","suffix":"","segments":[{"from":"0","color":"#ea5353"},{"from":"40","color":"#5cd65c"},{"from":"80","color":"#5c9ee6"}],"min":0,"max":100,"sizeThickness":16,"sizeGap":4,"sizeKeyThickness":8,"styleRounded":true,"styleGlow":false,"className":"","x":620,"y":100,"wires":[]},{"id":"9b00000000000005","type":"ui-gauge","name":"Umidade do solo","group":"9b00000000000a04","order":3,"width":2,"height":3,"gtype":"gauge-half","gstyle":"needle","title":"Umidade do solo","units":"%","icon":"","prefix":"","suffix":"","segments":[{"from":"0","color":"#ea5353"},{"from":"40","color":"#5cd65c"},{"from":"80","color":"#5c9ee6"}],"min":0,"max":100,"sizeThickness":16,"sizeGap":4,"sizeKeyThickness":8,"styleRounded":true,"styleGlow":false,"className":"","x":620,"y":140,"wires":[]},{"id":"9b00000000000006","type":"ui-chart","name":"Histórico","group":"9b00000000000a05","label":"Histórico","order":1,"chartType":"line","category":"topic","categoryType":"msg","xAxisLabel":"","xAxisProperty":"","xAxisPropertyType":"timestamp","xAxisType":"time","xAxisFormat":"","xAxisFormatType":"auto","yAxisLabel":"","yAxisProperty":"payload","yAxisPropertyType":"msg","ymin":"","ymax":"","action":"append","stackSeries":false,"pointShape":"circle","pointRadius":3,"showLegend":true,"removeOlder":1,"removeOlderUnit":"3600","removeOlderPoints":"","colors":["#c62828","#0095ff","#2ca02c","#ff7f0e","#a347e1","#d62728","#ff9896","#9467bd","#c5b0d5"],"textColor":["#666666"],"textColorDefault":true,"gridColor":["#e5e5e5"],"gridColorDefault":true,"width":12,"height":5,"className":"","interpolation":"linear","x":630,"y":200,"wires":[[]]},{"id":"9b0000000000000f","type":"debug","name":"Ver sensores","active":true,"tosidebar":true,"console":false,"tostatus":false,"complete":"payload","targetType":"msg","statusVal":"","statusType":"auto","x":380,"y":160,"wires":[]},{"id":"9b00000000000007","type":"ui-switch","name":"Ventilador","label":"Ventilador","group":"9b00000000000a06","order":1,"width":6,"height":1,"passthru":false,"decouple":"false","topic":"","topicType":"str","style":"","className":"","layout":"row-spaced","clickableArea":"switch","onvalue":"ON","onvalueType":"str","onicon":"","oncolor":"","offvalue":"OFF","offvalueType":"str","officon":"","offcolor":"","x":620,"y":300,"wires":[["9b0000000000000a"]]},{"id":"9b00000000000008","type":"ui-switch","name":"Bomba d'água","label":"Bomba d'água","group":"9b00000000000a06","order":2,"width":6,"height":1,"passthru":false,"decouple":"false","topic":"","topicType":"str","style":"","className":"","layout":"row-spaced","clickableArea":"switch","onvalue":"ON","onvalueType":"str","onicon":"","oncolor":"","offvalue":"OFF","offvalueType":"str","officon":"","offcolor":"","x":620,"y":360,"wires":[["9b0000000000000b"]]},{"id":"9b00000000000009","type":"ui-switch","name":"Lâmpada","label":"Lâmpada","group":"9b00000000000a06","order":3,"width":6,"height":1,"passthru":false,"decouple":"false","topic":"","topicType":"str","style":"","className":"","layout":"row-spaced","clickableArea":"switch","onvalue":"ON","onvalueType":"str","onicon":"","oncolor":"","offvalue":"OFF","offvalueType":"str","officon":"","offcolor":"","x":620,"y":420,"wires":[["9b0000000000000c"]]},{"id":"9b0000000000000a","type":"mqtt out","name":"Comando ventilador","topic":"estufa-joao/GRUPO_AQUI/comandos/ventilador","qos":"1","retain":"false","respTopic":"","contentType":"","userProps":"","correl":"","expiry":"","broker":"9b00000000000b01","x":860,"y":300,"wires":[]},{"id":"9b0000000000000b","type":"mqtt out","name":"Comando bomba","topic":"estufa-joao/GRUPO_AQUI/comandos/bomba","qos":"1","retain":"false","respTopic":"","contentType":"","userProps":"","correl":"","expiry":"","broker":"9b00000000000b01","x":860,"y":360,"wires":[]},{"id":"9b0000000000000c","type":"mqtt out","name":"Comando lâmpada","topic":"estufa-joao/GRUPO_AQUI/comandos/lampada","qos":"1","retain":"false","respTopic":"","contentType":"","userProps":"","correl":"","expiry":"","broker":"9b00000000000b01","x":860,"y":420,"wires":[]},{"id":"9b0000000000000d","type":"mqtt in","name":"Estado dos atuadores","topic":"estufa-joao/GRUPO_AQUI/estado","qos":"1","datatype":"json","broker":"9b00000000000b01","nl":false,"rap":true,"rh":0,"inputs":0,"x":150,"y":360,"wires":[["9b0000000000000e"]]},{"id":"9b0000000000000e","type":"function","name":"Atualiza os botões","func":"// Chega do ESP32: { ventilador: \"ON\", bomba: \"OFF\", lampada: \"OFF\" }\n// Atualiza os botões do painel com o estado REAL dos atuadores\nlet e = msg.payload;\nreturn [\n    { payload: e.ventilador },\n    { payload: e.bomba },\n    { payload: e.lampada }\n];","outputs":3,"timeout":0,"noerr":0,"initialize":"","finalize":"","libs":[],"x":380,"y":360,"wires":[["9b00000000000007"],["9b00000000000008"],["9b00000000000009"]]},{"id":"9b00000000000b01","type":"mqtt-broker","name":"HiveMQ público","broker":"broker.hivemq.com","port":"1883","clientid":"","autoConnect":true,"usetls":false,"protocolVersion":"4","keepalive":"60","cleansession":true,"autoUnsubscribe":true,"birthTopic":"","birthQos":"0","birthPayload":"","birthMsg":{},"closeTopic":"","closeQos":"0","closePayload":"","closeMsg":{},"willTopic":"","willQos":"0","willPayload":"","willMsg":{},"userProps":"","sessionExpiry":""},{"id":"9b00000000000a04","type":"ui-group","name":"Sensores","page":"9b00000000000a03","width":"6","height":"1","order":1,"showTitle":true,"className":"","visible":"true","disabled":"false","groupType":"default"},{"id":"9b00000000000a06","type":"ui-group","name":"Controles","page":"9b00000000000a03","width":"6","height":"1","order":2,"showTitle":true,"className":"","visible":"true","disabled":"false","groupType":"default"},{"id":"9b00000000000a05","type":"ui-group","name":"Histórico","page":"9b00000000000a03","width":"12","height":"1","order":3,"showTitle":true,"className":"","visible":"true","disabled":"false","groupType":"default"},{"id":"9b00000000000a03","type":"ui-page","name":"Estufa do Sr. João","ui":"9b00000000000a01","path":"/estufa","icon":"sprout","layout":"grid","theme":"9b00000000000a02","breakpoints":[{"name":"Default","px":"0","cols":"3"},{"name":"Tablet","px":"576","cols":"6"},{"name":"Small Desktop","px":"768","cols":"9"},{"name":"Desktop","px":"1024","cols":"12"}],"order":1,"className":"","visible":"true","disabled":"false"},{"id":"9b00000000000a01","type":"ui-base","name":"Estufa","path":"/dashboard","includeClientData":true,"acceptsClientConfig":["ui-notification","ui-control"],"showPathInSidebar":false,"showPageTitle":true,"navigationStyle":"default","titleBarStyle":"default"},{"id":"9b00000000000a02","type":"ui-theme","name":"Tema Estufa","colors":{"surface":"#2e7d32","primary":"#2e7d32","bgPage":"#eef1f3","groupBg":"#ffffff","groupOutline":"#cccccc"},"sizes":{"density":"default","pagePadding":"12px","groupGap":"12px","groupBorderRadius":"6px","widgetGap":"12px"}}]</pre>
@@ -919,7 +1028,7 @@ return [
 
   <div class="challenge">
     <h4>Para ir além (opcional)</h4>
-    <p>Hoje o Sr. João precisa apertar os botões. Que tal uma <b>regra automática</b>? Por exemplo: se a umidade do solo ficar abaixo de 30 %, publicar <code>ON</code> em <code>comandos/bomba</code>, e acima de 60 %, <code>OFF</code>. Dá para fazer com um nó <b>switch</b> (o amarelo, da categoria função) ligado na saída 3 do “Separa os sensores”, dois nós <b>change</b> e um <b>mqtt out</b>.</p>
+    <p>Uma <b>regra automática</b>: se a umidade do solo ficar abaixo de 30 %, publicar <code>ON</code> em <code>comandos/bomba</code>; acima de 60 %, <code>OFF</code>. Dá para fazer com um nó <b>switch</b> amarelo (categoria função) ligado na saída 3 do “Separa os sensores”, dois nós <b>change</b> e um <b>mqtt out</b>.</p>
   </div>
   <label class="done"><input type="checkbox" data-step="nodered"> Concluí esta etapa</label>
 </section>
